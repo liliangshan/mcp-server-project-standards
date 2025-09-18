@@ -1,0 +1,38 @@
+{
+  "name": "@liangshanli/mcp-server-project-standards",
+  "version": "1.0.0",
+  "description": "MCP Project Standards server with project info, structure, API standards, development standards and custom tools",
+  "main": "bin/cli.js",
+  "bin": {
+    "mcp-server-project-standards": "bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "dev": "node --inspect bin/cli.js",
+    "test": "node test-simple.js",
+    "start-managed": "node start-server.js",
+    "daemon": "node start-server.js",
+    "server": "node src/server-final.js"
+  },
+  "keywords": [
+    "mcp",
+    "project",
+    "standards",
+    "api",
+    "development",
+    "tools"
+  ],
+  "author": "liliangshan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liliangshan/mcp-server-project-standards"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
