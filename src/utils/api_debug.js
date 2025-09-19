@@ -1,6 +1,32 @@
 const fs = require('fs-extra');
 const path = require('path');
 
+// Get allowed methods from environment variable
+const getAllowedMethods = () => {
+  const allowedMethods = process.env.API_DEBUG_ALLOWED_METHODS || 'GET';
+  return allowedMethods.split(',').map(method => method.trim().toUpperCase());
+};
+
+// Get login URL from environment variable
+const getLoginUrl = () => {
+  return process.env.API_DEBUG_LOGIN_URL || '/api/login';
+};
+
+// Get login method from environment variable
+const getLoginMethod = () => {
+  return (process.env.API_DEBUG_LOGIN_METHOD || 'POST').toUpperCase();
+};
+
+// Get login body from environment variable
+const getLoginBody = () => {
+  return process.env.API_DEBUG_LOGIN_BODY || '{"username":"","password":""}';
+};
+
+// Get login description from environment variable
+const getLoginDescription = () => {
+  return process.env.API_DEBUG_LOGIN_DESCRIPTION || 'Save returned token to common headers in debug tool, field name Authorization, field value Bearer token';
+};
+
 // Get API debug config file path
 const getApiConfigPath = () => {
   const configDir = process.env.CONFIG_DIR || './.setting';
@@ -228,6 +254,43 @@ async function api_debug(params, config, saveConfig) {
       const baseUrl = apiDebugConfig.baseUrl || '';
       const commonHeaders = apiDebugConfig.headers || {};
       
+      // 验证请求方法是否被允许
+      const allowedMethods = getAllowedMethods();
+      const requestMethod = (apiItem.method || 'GET').toUpperCase();
+      const loginUrl = getLoginUrl();
+      
+      // 判断是否为登录接口 - 支持完整 URL 和相对路径匹配
+      const isLoginRequest = (() => {
+        const apiUrl = apiItem.url;
+        const loginUrlPattern = loginUrl;
+        
+        // 如果登录 URL 是完整 URL，提取路径部分进行匹配
+        if (loginUrlPattern.startsWith('http://') || loginUrlPattern.startsWith('https://')) {
+          try {
+            const url = new URL(loginUrlPattern);
+            const loginPath = url.pathname;
+            // 匹配完整路径或去掉前导斜杠的路径
+            return apiUrl === loginPath || apiUrl === loginPath.replace(/^\//, '') || apiUrl === loginUrlPattern;
+          } catch (e) {
+            // 如果 URL 解析失败，回退到字符串匹配
+            return apiUrl === loginUrlPattern;
+          }
+        } else {
+          // 相对路径匹配
+          return apiUrl === loginUrlPattern || 
+                 apiUrl === loginUrlPattern.replace(/^\//, '') || 
+                 apiUrl.endsWith(loginUrlPattern) ||
+                 apiUrl.endsWith(loginUrlPattern.replace(/^\//, ''));
+        }
+      })();
+      
+      if (!allowedMethods.includes(requestMethod)) {
+        // 如果是登录接口，继续执行；否则返回错误
+        if (!isLoginRequest) {
+          throw new Error(`Method ${requestMethod} is not allowed. Allowed methods: ${allowedMethods.join(', ')}`);
+        }
+      }
+      
       // 构建完整 URL
       const fullUrl = baseUrl + apiItem.url;
       
@@ -291,64 +354,113 @@ async function api_debug(params, config, saveConfig) {
       
       const finalUrl = queryString ? `${fullUrl}?${queryString}` : fullUrl;
       
+      let success = true;
       let response;
       let responseData;
       let error = null;
-      let success = true;
       
+      // 请求处理部分 - 只有这部分出错才会保存到 api.json
       try {
-        // 执行请求
-        response = await fetch(finalUrl, {
-          method: apiItem.method || 'GET',
-          headers: headers,
-          body: body
-        });
         
-        // 获取响应数据
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-          responseData = await response.json();
+        // 如果是登录接口且方法不被允许，使用环境变量中的登录配置
+        if (isLoginRequest && !allowedMethods.includes(requestMethod)) {
+          const loginMethod = getLoginMethod();
+          const loginBody = getLoginBody();
+          
+          // 更新请求方法和请求体
+          apiItem.method = loginMethod;
+          if (loginBody) {
+            apiItem.body = loginBody;
+          }
+          
+          // 更新最终 URL 和方法
+          const updatedFinalUrl = queryString ? `${fullUrl}?${queryString}` : fullUrl;
+          
+          try {
+            response = await fetch(updatedFinalUrl, {
+              method: loginMethod,
+              headers: headers,
+              body: loginBody
+            });
+          } catch (fetchError) {
+            error = fetchError.message;
+            success = false;
+            response = null;
+          }
         } else {
-          responseData = await response.text();
+          try {
+            // 执行请求
+            response = await fetch(finalUrl, {
+              method: apiItem.method || 'GET',
+              headers: headers,
+              body: body
+            });
+          } catch (fetchError) {
+            error = fetchError.message;
+            success = false;
+            response = null;
+          }
         }
         
-        // 记录成功信息
-        apiDebugConfig.list[index].data = responseData;
-        apiDebugConfig.list[index].status = response.status;
-        apiDebugConfig.list[index].statusText = response.statusText;
-        apiDebugConfig.list[index].responseHeaders = Object.fromEntries(response.headers.entries());
-        apiDebugConfig.list[index].lastExecuted = new Date().toISOString();
-        apiDebugConfig.list[index].success = true;
-        apiDebugConfig.list[index].error = null;
+        if (response) {
+          // 获取响应数据
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            responseData = await response.json();
+          } else {
+            responseData = await response.text();
+          }
+          
+          // 判断请求是否成功（HTTP 状态码 200-299 为成功）
+          const isHttpSuccess = response.status >= 200 && response.status < 300;
+          success = isHttpSuccess;
+          
+          // 记录响应信息
+          apiDebugConfig.list[index].data = responseData;
+          apiDebugConfig.list[index].status = response.status;
+          apiDebugConfig.list[index].statusText = response.statusText;
+          apiDebugConfig.list[index].responseHeaders = Object.fromEntries(response.headers.entries());
+          apiDebugConfig.list[index].lastExecuted = new Date().toISOString();
+          apiDebugConfig.list[index].success = isHttpSuccess;
+          apiDebugConfig.list[index].error = isHttpSuccess ? null : `HTTP ${response.status}: ${response.statusText}`;
+        } else {
+          // 记录失败信息
+          success = false;
+          apiDebugConfig.list[index].data = null;
+          apiDebugConfig.list[index].status = null;
+          apiDebugConfig.list[index].statusText = null;
+          apiDebugConfig.list[index].responseHeaders = null;
+          apiDebugConfig.list[index].lastExecuted = new Date().toISOString();
+          apiDebugConfig.list[index].success = false;
+          apiDebugConfig.list[index].error = error;
+        }
         
-      } catch (fetchError) {
-        // 记录失败信息
-        error = fetchError.message;
-        success = false;
+        // 去重处理：相同的 URL 只保留一份（保留最新的执行结果）
+        const urlMap = new Map();
+        apiDebugConfig.list.forEach(item => {
+          if (item.url) {
+            urlMap.set(item.url, item);
+          }
+        });
+        apiDebugConfig.list = Array.from(urlMap.values());
         
-        apiDebugConfig.list[index].data = null;
-        apiDebugConfig.list[index].status = null;
-        apiDebugConfig.list[index].statusText = null;
-        apiDebugConfig.list[index].responseHeaders = null;
-        apiDebugConfig.list[index].lastExecuted = new Date().toISOString();
-        apiDebugConfig.list[index].success = false;
-        apiDebugConfig.list[index].error = error;
+        // 无论成功还是失败，都保存配置
+        saveApiConfig(apiDebugConfig);
+        
+      } catch (requestError) {
+        // 只有请求相关的错误才保存到 api.json
+        try {
+          apiDebugConfig.list[index].lastExecuted = new Date().toISOString();
+          apiDebugConfig.list[index].success = false;
+          apiDebugConfig.list[index].error = requestError.message;
+          saveApiConfig(apiDebugConfig);
+        } catch (saveErr) {
+          console.error('Failed to save request error information:', saveErr.message);
+        }
       }
       
-      // 去重处理：相同的 URL 只保留一份（保留最新的执行结果）
-      const urlMap = new Map();
-      apiDebugConfig.list.forEach(item => {
-        if (item.url) {
-          urlMap.set(item.url, item);
-        }
-      });
-      apiDebugConfig.list = Array.from(urlMap.values());
-      
-      // 无论成功还是失败，都保存配置
-      saveApiConfig(apiDebugConfig);
-      
-      if (success) {
+      if (success && response) {
         return {
           success: true,
           message: `Successfully executed API: ${apiItem.description || apiItem.url}`,
@@ -376,7 +488,7 @@ async function api_debug(params, config, saveConfig) {
             headers: headers,
             body: body
           },
-          error: error,
+          error: error || (response ? `HTTP ${response.status}: ${response.statusText}` : 'Request failed'),
           timestamp: new Date().toISOString()
         };
       }

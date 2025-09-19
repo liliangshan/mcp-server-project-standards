@@ -498,9 +498,40 @@ class ProjectStandardsMCPServer {
               }
             );
           
+          // 构建 API 调试工具描述
+          let apiDebugDescription = 'API debugging tool for testing and executing API requests';
+          
+          // 检查是否设置了登录接口环境变量
+          const loginUrl = process.env.API_DEBUG_LOGIN_URL;
+          const loginMethod = process.env.API_DEBUG_LOGIN_METHOD;
+          const loginDescription = process.env.API_DEBUG_LOGIN_DESCRIPTION;
+          const allowedMethods = process.env.API_DEBUG_ALLOWED_METHODS;
+          
+          if (loginUrl || loginMethod || allowedMethods) {
+            apiDebugDescription += '\n\n🔐 Login Authentication Configuration:';
+            
+            if (loginUrl) {
+              apiDebugDescription += `\n- Login URL: ${loginUrl}`;
+            }
+            if (loginMethod) {
+              apiDebugDescription += `\n- Login Method: ${loginMethod}`;
+            }
+            if (loginDescription) {
+              apiDebugDescription += `\n- Login Description: ${loginDescription}`;
+            }
+            if (allowedMethods) {
+              apiDebugDescription += `\n- Allowed Methods: ${allowedMethods}`;
+            }
+            
+            apiDebugDescription += '\n\n💡 Usage Instructions:';
+            apiDebugDescription += '\n- Login API automatically uses environment variable configuration';
+            apiDebugDescription += '\n- Non-login APIs must use allowed methods only';
+            apiDebugDescription += '\n- Common request headers are automatically updated after successful login';
+          }
+          
           tools.push({
             name: 'api_debug',
-            description: 'API debugging tool for testing and executing API requests',
+            description: apiDebugDescription,
             inputSchema: {
               type: 'object',
               properties: {

@@ -2,6 +2,43 @@
 
 一个基于 MCP（Model Context Protocol）协议的项目标准管理工具，专为 AI 辅助开发而设计，帮助团队在多台机器上保持统一的开发标准和规范。
 
+## 📋 版本更新说明
+
+### v1.1.0 (2024-12-19)
+
+#### 🆕 新增功能
+- **API 调试工具环境变量支持**：
+  - `API_DEBUG_ALLOWED_METHODS` - 控制允许的请求方法（默认：GET，支持：GET,POST,PUT,DELETE,PATCH等）
+  - `API_DEBUG_LOGIN_URL` - 设置登录接口 URL（默认：/api/login）
+  - `API_DEBUG_LOGIN_METHOD` - 设置登录请求方法（默认：POST）
+  - `API_DEBUG_LOGIN_BODY` - 设置登录请求体（默认：{"username":"","password":""}）
+  - `API_DEBUG_LOGIN_DESCRIPTION` - 设置登录接口说明（默认：将返回的token保存到调试工具中的公共header，字段名Authorization，字段值是Bearer token）
+
+#### 🔧 功能优化
+- **登录接口智能识别**：
+  - 支持完整 URL 和相对路径匹配
+  - 自动识别登录接口并使用环境变量配置
+  - 非登录接口严格遵循允许的方法限制
+
+- **错误处理优化**：
+  - 只有请求相关错误才保存到 api.json
+  - 方法验证错误不污染执行记录
+  - 更精确的错误分类和处理
+
+- **工具描述动态显示**：
+  - 根据环境变量配置显示登录认证信息
+  - 实时显示允许的请求方法和使用说明
+
+#### 🛡️ 安全增强
+- **请求方法限制**：默认只允许 GET 请求，防止误操作
+- **登录接口例外**：登录接口可使用环境变量中配置的方法
+- **灵活配置**：可根据需要开放更多请求方法
+
+#### 📚 文档更新
+- 添加了环境变量配置说明
+- 更新了 API 调试工具使用指南
+- 完善了登录认证流程文档
+
 ## 🚀 核心优势
 
 ### 🎯 解决多机器开发混乱问题
@@ -73,9 +110,14 @@ npm install
 
 ### 环境变量
 
-| 变量名 | 默认值 | 描述 |
-|--------|--------|------|
-| CONFIG_DIR | ./.setting | 配置文件目录（包含 config.json 和 api.json） |
+| 变量名 | 默认值 | 描述 | 示例 |
+|--------|--------|------|------|
+| CONFIG_DIR | ./.setting | 配置文件目录（包含 config.json 和 api.json） | `export CONFIG_DIR="./config"` |
+| API_DEBUG_ALLOWED_METHODS | GET | 控制允许的请求方法（支持：GET,POST,PUT,DELETE,PATCH等） | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
+| API_DEBUG_LOGIN_URL | /api/login | 设置登录接口 URL | `export API_DEBUG_LOGIN_URL="/api/auth/login"` |
+| API_DEBUG_LOGIN_METHOD | POST | 设置登录请求方法 | `export API_DEBUG_LOGIN_METHOD="POST"` |
+| API_DEBUG_LOGIN_BODY | {"username":"","password":""} | 设置登录请求体 | `export API_DEBUG_LOGIN_BODY='{"mobile":"","password":""}'` |
+| API_DEBUG_LOGIN_DESCRIPTION | 将返回的token保存到调试工具中的公共header，字段名Authorization，字段值是Bearer token | 设置登录接口说明 | `export API_DEBUG_LOGIN_DESCRIPTION="用户登录接口"` |
 
 ### 配置文件
 
@@ -166,7 +208,12 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
-        "CONFIG_DIR": "./.setting"
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
+        "API_DEBUG_LOGIN_DESCRIPTION": "将返回的token保存到调试工具中的公共header，字段名Authorization，字段值是Bearer token"
       }
     }
   }
@@ -185,7 +232,12 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
-        "CONFIG_DIR": "./.setting"
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
+        "API_DEBUG_LOGIN_DESCRIPTION": "将返回的token保存到调试工具中的公共header，字段名Authorization，字段值是Bearer token"
       }
     }
   }
@@ -348,6 +400,10 @@ npm run dev
 - **执行记录**：无论成功失败都记录执行历史
 - **搜索功能**：支持按 URL 或描述搜索 API
 - **参数管理**：支持查询参数、请求体、自定义请求头等
+- **环境变量控制**：通过环境变量控制允许的请求方法和登录接口配置
+- **请求方法限制**：默认只允许 GET 请求，防止误操作
+- **登录接口智能识别**：自动识别登录接口并使用环境变量配置
+- **动态工具描述**：根据环境变量配置实时显示工具说明
 
 **🔐 特别说明 - 登录认证流程：**
 

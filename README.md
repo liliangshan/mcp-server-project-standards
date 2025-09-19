@@ -2,6 +2,43 @@
 
 A MCP (Model Context Protocol) server for project standards management, designed for AI-assisted development to help teams maintain unified development standards and specifications across multiple machines.
 
+## 📋 Version Updates
+
+### v1.1.0 (2024-12-19)
+
+#### 🆕 New Features
+- **API Debug Tool Environment Variable Support**:
+  - `API_DEBUG_ALLOWED_METHODS` - Control allowed request methods (default: GET)
+  - `API_DEBUG_LOGIN_URL` - Set login API URL (default: /api/login)
+  - `API_DEBUG_LOGIN_METHOD` - Set login request method (default: POST)
+  - `API_DEBUG_LOGIN_BODY` - Set login request body (default: {"username":"","password":""})
+  - `API_DEBUG_LOGIN_DESCRIPTION` - Set login API description (default: Save returned token to common headers in debug tool, field name Authorization, field value Bearer token)
+
+#### 🔧 Feature Improvements
+- **Smart Login API Recognition**:
+  - Support for full URL and relative path matching
+  - Automatic login API recognition using environment variable configuration
+  - Non-login APIs strictly follow allowed method restrictions
+
+- **Error Handling Optimization**:
+  - Only request-related errors are saved to api.json
+  - Method validation errors don't pollute execution records
+  - More precise error classification and handling
+
+- **Dynamic Tool Description**:
+  - Display login authentication information based on environment variable configuration
+  - Real-time display of allowed request methods and usage instructions
+
+#### 🛡️ Security Enhancements
+- **Request Method Restrictions**: Default only allows GET requests to prevent accidental operations
+- **Login API Exception**: Login APIs can use methods configured in environment variables
+- **Flexible Configuration**: Can open more request methods as needed
+
+#### 📚 Documentation Updates
+- Added environment variable configuration instructions
+- Updated API debug tool usage guide
+- Improved login authentication flow documentation
+
 ## 🚀 Core Advantages
 
 ### 🎯 Solving Multi-Machine Development Chaos
@@ -73,9 +110,14 @@ The server uses the `./.setting/` directory to store configuration files by defa
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| CONFIG_DIR | ./.setting | Configuration file directory (contains config.json and api.json) |
+| Variable | Default | Description | Example |
+|----------|---------|-------------|---------|
+| CONFIG_DIR | ./.setting | Configuration file directory (contains config.json and api.json) | `export CONFIG_DIR="./config"` |
+| API_DEBUG_ALLOWED_METHODS | GET | Control allowed request methods (supports: GET,POST,PUT,DELETE,PATCH, etc.) | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
+| API_DEBUG_LOGIN_URL | /api/login | Set login API URL | `export API_DEBUG_LOGIN_URL="/api/auth/login"` |
+| API_DEBUG_LOGIN_METHOD | POST | Set login request method | `export API_DEBUG_LOGIN_METHOD="POST"` |
+| API_DEBUG_LOGIN_BODY | {"username":"","password":""} | Set login request body | `export API_DEBUG_LOGIN_BODY='{"mobile":"","password":""}'` |
+| API_DEBUG_LOGIN_DESCRIPTION | Save returned token to common headers in debug tool, field name Authorization, field value Bearer token | Set login API description | `export API_DEBUG_LOGIN_DESCRIPTION="User Login API"` |
 
 ### Configuration Files
 
@@ -166,7 +208,12 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
-        "CONFIG_DIR": "./.setting"
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
+        "API_DEBUG_LOGIN_DESCRIPTION": "Save returned token to common headers in debug tool, field name Authorization, field value Bearer token"
       }
     }
   }
@@ -185,7 +232,12 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
-        "CONFIG_DIR": "./.setting"
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
+        "API_DEBUG_LOGIN_DESCRIPTION": "Save returned token to common headers in debug tool, field name Authorization, field value Bearer token"
       }
     }
   }

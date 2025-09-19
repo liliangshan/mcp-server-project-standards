@@ -28,8 +28,19 @@ function startServer() {
   const env = {
     ...process.env,
     // Set CONFIG_DIR if specified, otherwise use default
-    CONFIG_DIR: process.env.CONFIG_DIR || './.setting'
+    CONFIG_DIR: process.env.CONFIG_DIR || './.setting',
+    // API Debug environment variables
+    API_DEBUG_ALLOWED_METHODS: process.env.API_DEBUG_ALLOWED_METHODS || 'GET',
+    API_DEBUG_LOGIN_URL: process.env.API_DEBUG_LOGIN_URL || '/api/login',
+    API_DEBUG_LOGIN_METHOD: process.env.API_DEBUG_LOGIN_METHOD || 'POST',
+    API_DEBUG_LOGIN_BODY: process.env.API_DEBUG_LOGIN_BODY || '{"username":"","password":""}',
+    API_DEBUG_LOGIN_DESCRIPTION: process.env.API_DEBUG_LOGIN_DESCRIPTION || 'Save returned token to common headers in debug tool, field name Authorization, field value Bearer token'
   };
+
+  // Convert allowed methods to uppercase if specified
+  if (env.API_DEBUG_ALLOWED_METHODS) {
+    env.API_DEBUG_ALLOWED_METHODS = env.API_DEBUG_ALLOWED_METHODS.toUpperCase();
+  }
 
   writeLog('INFO', 'Starting MCP Project Standards server');
 
