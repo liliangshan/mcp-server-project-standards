@@ -10,6 +10,8 @@ const database_standards = require('./utils/database_standards');
 const api_login = require('./utils/api_login');
 const api_debug = require('./utils/api_debug');
 const api_config = require('./utils/api_config');
+const api_help = require('./utils/api_help');
+const api_execute = require('./utils/api_execute');
 
 // Get configuration from file or environment
 const getConfig = () => {
@@ -176,6 +178,18 @@ class ProjectStandardsMCPServer {
   // API config tool
   async api_config(params) {
     const result = await api_config(params, this.config, saveConfig);
+    return result;
+  }
+
+  // API help tool
+  async api_help(params) {
+    const result = await api_help(params, this.config, saveConfig);
+    return result;
+  }
+
+  // API execute tool
+  async api_execute(params) {
+    const result = await api_execute(params, this.config, saveConfig);
     return result;
   }
 
@@ -522,7 +536,7 @@ class ProjectStandardsMCPServer {
           // API Login Tool
           tools.push({
             name: 'api_login',
-            description: 'API login authentication tool that uses environment variables for login credentials',
+            description: 'API login authentication tool that uses environment variables for login credentials. Automatically extracts token from response and updates Authorization headers. Example: Call with optional baseUrl parameter to override default base URL',
             inputSchema: {
               type: 'object',
               properties: {
@@ -537,50 +551,167 @@ class ProjectStandardsMCPServer {
           // API Debug Tool
           tools.push({
             name: 'api_debug',
-            description: 'API debugging tool for directly executing API requests',
+            description: 'API debugging tool for directly executing API requests with automatic content-type detection and flexible body format support. Examples: GET /api/users with query params, POST /api/login with JSON body {"username":"admin","password":"123456"}, PUT /api/users/123 with form data "name=John&email=john@example.com"',
             inputSchema: {
               type: 'object',
               properties: {
                 url: {
                   type: 'string',
-                  description: 'API URL to execute (required)'
+                  description: 'API URL to execute (required)',
+                  examples: ['/api/users', 'https://api.example.com/users', '/api/login']
                 },
                 method: {
                   type: 'string',
                   enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-                  description: 'HTTP method (optional, defaults to GET)'
+                  description: 'HTTP method (optional, defaults to GET)',
+                  examples: ['GET', 'POST', 'PUT']
                 },
                 headers: {
                   type: 'object',
-                  description: 'Additional headers for the request (optional)'
+                  description: 'Additional headers for the request (optional)',
+                  examples: [
+                    {'Authorization': 'Bearer token123'},
+                    {'Content-Type': 'application/json'},
+                    {'X-API-Key': 'your-api-key'}
+                  ]
                 },
                 query: {
                   type: 'object',
-                  description: 'Query parameters (optional)'
+                  description: 'Query parameters (optional)',
+                  examples: [
+                    {'page': 1, 'limit': 10},
+                    {'search': 'keyword', 'sort': 'name'},
+                    {'id': 123, 'status': 'active'}
+                  ]
                 },
                 body: {
-                  description: 'Request body (optional)'
+                  description: 'Request body (optional) - Supports multiple formats: JSON object, form data, or plain text',
+                  examples: [
+                    'JSON Object: {"username": "admin", "password": "123456"}',
+                    'Form Data: "username=admin&password=123456"',
+                    'Plain Text: "Hello World"',
+                    'XML: "<user><name>John</name><email>john@example.com</email></user>"'
+                  ]
                 },
                 contentType: {
                   type: 'string',
-                  description: 'Content-Type for request body (optional, will auto-detect if not specified)'
+                  description: 'Content-Type for request body (optional, will auto-detect if not specified)',
+                  examples: [
+                    'application/json',
+                    'application/x-www-form-urlencoded',
+                    'text/plain',
+                    'application/xml',
+                    'text/html'
+                  ]
                 }
               },
-              required: ['url']
+              required: ['url'],
+              examples: [
+                {
+                  description: 'Simple GET request',
+                  url: '/api/users',
+                  method: 'GET',
+                  query: {'page': 1, 'limit': 10}
+                },
+                {
+                  description: 'POST request with JSON body',
+                  url: '/api/login',
+                  method: 'POST',
+                  body: {'username': 'admin', 'password': '123456'},
+                  headers: {'Content-Type': 'application/json'}
+                },
+                {
+                  description: 'PUT request with form data',
+                  url: '/api/users/123',
+                  method: 'PUT',
+                  body: 'name=John&email=john@example.com',
+                  contentType: 'application/x-www-form-urlencoded'
+                },
+                {
+                  description: 'POST request with XML body',
+                  url: '/api/data',
+                  method: 'POST',
+                  body: '<data><item>value</item></data>',
+                  contentType: 'application/xml'
+                }
+              ]
             }
           });
+
+        // API Help Tool
+        tools.push({
+          name: 'api_help',
+          description: 'API help tool that provides detailed documentation and examples for all API debugging tools. Use this to understand how to use api_debug, api_login, and api_config tools effectively',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tool: {
+                type: 'string',
+                description: 'Specific tool name to get help for (optional: api_debug, api_login, api_config)',
+                examples: ['api_debug', 'api_login', 'api_config']
+              }
+            }
+          }
+        });
+
+        // API Execute Tool
+        tools.push({
+          name: 'api_execute',
+          description: 'Execute API requests by index from configured API list. Examples: execute API at index 0, execute with overrides {"method":"POST","body":{"key":"value"}}',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              index: {
+                type: 'number',
+                description: 'Index of the API to execute from the configured list (required)',
+                minimum: 0
+              },
+              overrides: {
+                type: 'object',
+                description: 'Optional parameters to override the configured API settings',
+                properties: {
+                  url: {
+                    type: 'string',
+                    description: 'Override the API URL'
+                  },
+                  method: {
+                    type: 'string',
+                    enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+                    description: 'Override the HTTP method'
+                  },
+                  headers: {
+                    type: 'object',
+                    description: 'Override or add request headers'
+                  },
+                  query: {
+                    type: 'object',
+                    description: 'Override query parameters'
+                  },
+                  body: {
+                    description: 'Override request body'
+                  },
+                  contentType: {
+                    type: 'string',
+                    description: 'Override content type'
+                  }
+                }
+              }
+            },
+            required: ['index']
+          }
+        });
 
           // API Config Tool
           tools.push({
             name: 'api_config',
-            description: 'API configuration management tool for managing API settings, endpoints, and configurations',
+            description: 'API configuration management tool for managing API settings, endpoints, and configurations. Examples: get config, set baseUrl to "https://api.example.com", updateHeaders with {"Authorization":"Bearer token"}, search APIs by keyword, list all configured APIs',
             inputSchema: {
               type: 'object',
               properties: {
                 action: {
                   type: 'string',
-                  enum: ['get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'search', 'list'],
-                  description: 'Action to perform: "get" to retrieve config, "set" to update config, "updateBaseUrl" to update base URL, "updateHeaders" to update headers, "deleteHeader" to delete header, "search" to search APIs, "list" to list all APIs'
+                  enum: ['get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'addApi', 'search', 'list'],
+                  description: 'Action to perform: "get" to retrieve config, "set" to update config, "updateBaseUrl" to update base URL, "updateHeaders" to update headers, "deleteHeader" to delete header, "addApi" to add API endpoint, "search" to search APIs, "list" to list all APIs'
                 },
                 config: {
                   type: 'object',
@@ -646,6 +777,41 @@ class ProjectStandardsMCPServer {
                   type: 'string',
                   description: 'Name of header to delete (required for "deleteHeader" action)'
                 },
+                api: {
+                  type: 'object',
+                  description: 'API configuration (required for "addApi" action)',
+                  properties: {
+                    url: {
+                      type: 'string',
+                      description: 'API endpoint URL'
+                    },
+                    method: {
+                      type: 'string',
+                      enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+                      description: 'HTTP method'
+                    },
+                    description: {
+                      type: 'string',
+                      description: 'API description'
+                    },
+                    query: {
+                      type: 'object',
+                      description: 'Query parameters'
+                    },
+                    body: {
+                      description: 'Request body'
+                    },
+                    contentType: {
+                      type: 'string',
+                      description: 'Content-Type for request body'
+                    },
+                    header: {
+                      type: 'object',
+                      description: 'Additional headers for this specific request'
+                    }
+                  },
+                  required: ['url']
+                },
                 keyword: {
                   type: 'string',
                   description: 'Search keyword (required for "search" action)'
@@ -690,6 +856,13 @@ class ProjectStandardsMCPServer {
                     headerName: { type: 'string' }
                   },
                   required: ['headerName']
+                },
+                {
+                  properties: {
+                    action: { const: 'addApi' },
+                    api: { type: 'object' }
+                  },
+                  required: ['api']
                 },
                 {
                   properties: {

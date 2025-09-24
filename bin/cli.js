@@ -19,6 +19,8 @@ if (!fs.existsSync(serverPath)) {
 }
 
 writeLog('INFO', `Starting MCP Project Standards server from: ${serverPath}`);
+writeLog('INFO', `Current working directory: ${process.cwd()}`);
+writeLog('INFO', `CLI script directory: ${__dirname}`);
 
 let server = null;
 

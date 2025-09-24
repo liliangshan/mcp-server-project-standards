@@ -3,21 +3,22 @@ const { loadApiConfig, saveApiConfig } = require('./api_common');
 /**
  * API 配置工具 - 专门处理API配置管理
  * @param {Object} params - 参数
- * @param {string} params.action - 操作类型 ('get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'search', 'list')
+ * @param {string} params.action - 操作类型 ('get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'addApi', 'search', 'list')
  * @param {Object} params.config - API配置（set 时必需）
  * @param {string} params.baseUrl - 基础URL（updateBaseUrl 时必需）
  * @param {Object} params.headers - 请求头（updateHeaders 时必需）
  * @param {string} params.headerName - 要删除的请求头名称（deleteHeader 时必需）
+ * @param {Object} params.api - API配置（addApi 时必需）
  * @param {string} params.keyword - 搜索关键词（search 时必需）
  * @param {Object} config - 服务器配置
  * @param {Function} saveConfig - 保存配置函数
  * @returns {Object} API配置结果
  */
 async function api_config(params, config, saveConfig) {
-  const { action, config: apiConfig, baseUrl, headers, headerName, keyword } = params || {};
+  const { action, config: apiConfig, baseUrl, headers, headerName, api, keyword } = params || {};
   
   if (!action) {
-    throw new Error('Missing action parameter. Must be "get", "set", "updateBaseUrl", "updateHeaders", "deleteHeader", "search", or "list"');
+    throw new Error('Missing action parameter. Must be "get", "set", "updateBaseUrl", "updateHeaders", "deleteHeader", "addApi", "search", or "list"');
   }
   
   if (action === 'get') {
@@ -162,6 +163,55 @@ async function api_config(params, config, saveConfig) {
     } catch (err) {
       throw new Error(`Failed to delete header: ${err.message}`);
     }
+  } else if (action === 'addApi') {
+    if (!api || !api.url) {
+      throw new Error('Missing or invalid api parameter for addApi action. API must have url property');
+    }
+    
+    try {
+      const apiDebugConfig = loadApiConfig();
+      
+      if (!apiDebugConfig.list) {
+        apiDebugConfig.list = [];
+      }
+      
+      // 检查是否已存在相同URL的API
+      const existingIndex = apiDebugConfig.list.findIndex(item => item.url === api.url);
+      
+      if (existingIndex >= 0) {
+        // 更新现有API
+        apiDebugConfig.list[existingIndex] = { ...apiDebugConfig.list[existingIndex], ...api };
+        const saved = saveApiConfig(apiDebugConfig);
+        if (!saved) {
+          throw new Error('Failed to save API configuration');
+        }
+        
+        return {
+          success: true,
+          message: `Successfully updated existing API: ${api.url}. You can now execute it using: api_execute with index ${existingIndex}`,
+          index: existingIndex,
+          api: apiDebugConfig.list[existingIndex],
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        // 添加新API
+        apiDebugConfig.list.push(api);
+        const saved = saveApiConfig(apiDebugConfig);
+        if (!saved) {
+          throw new Error('Failed to save API configuration');
+        }
+        
+        return {
+          success: true,
+          message: `Successfully added new API: ${api.url}. You can now execute it using: api_execute with index ${apiDebugConfig.list.length - 1}`,
+          index: apiDebugConfig.list.length - 1,
+          api: api,
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (err) {
+      throw new Error(`Failed to add API: ${err.message}`);
+    }
   } else if (action === 'search') {
     if (!keyword) {
       throw new Error('Missing keyword parameter for search action');
@@ -172,7 +222,10 @@ async function api_config(params, config, saveConfig) {
       let searchResults = [];
       
       if (apiDebugConfig.list && Array.isArray(apiDebugConfig.list)) {
-        searchResults = apiDebugConfig.list.filter((item) => {
+        searchResults = apiDebugConfig.list.map((item, index) => ({
+          ...item,
+          index: index
+        })).filter((item) => {
           const urlMatch = item.url && item.url.toLowerCase().includes(keyword.toLowerCase());
           const descMatch = item.description && item.description.toLowerCase().includes(keyword.toLowerCase());
           return urlMatch || descMatch;
@@ -195,10 +248,16 @@ async function api_config(params, config, saveConfig) {
       const apiDebugConfig = loadApiConfig();
       const apiList = apiDebugConfig.list || [];
       
+      // Add index to each API
+      const apisWithIndex = apiList.map((api, index) => ({
+        ...api,
+        index: index
+      }));
+      
       return {
         success: true,
         message: `Found ${apiList.length} configured API(s)`,
-        apis: apiList,
+        apis: apisWithIndex,
         totalCount: apiList.length,
         config: {
           baseUrl: apiDebugConfig.baseUrl,

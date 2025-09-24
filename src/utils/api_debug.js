@@ -2,12 +2,27 @@ const { getAllowedMethods, loadApiConfig, saveApiConfig, detectContentType } = r
 
 /**
  * API 调试工具 - 直接执行API请求
+ * 
+ * 支持的请求体格式：
+ * 1. JSON对象: {"username": "admin", "password": "123456"}
+ * 2. 表单数据: "username=admin&password=123456"
+ * 3. 纯文本: "Hello World"
+ * 4. XML: "<user><name>John</name><email>john@example.com</email></user>"
+ * 5. HTML: "<html><body>Content</body></html>"
+ * 
+ * 自动内容类型检测：
+ * - JSON对象 → application/json
+ * - 表单数据 → application/x-www-form-urlencoded
+ * - XML → application/xml
+ * - HTML → text/html
+ * - 纯文本 → text/plain
+ * 
  * @param {Object} params - 参数
  * @param {string} params.url - 要执行的接口URL（必需）
  * @param {string} params.method - HTTP方法（可选，默认GET）
  * @param {Object} params.headers - 额外请求头（可选）
  * @param {Object} params.query - 查询参数（可选）
- * @param {*} params.body - 请求体（可选）
+ * @param {*} params.body - 请求体（可选，支持多种格式）
  * @param {string} params.contentType - 内容类型（可选，会自动检测）
  * @param {Object} config - 服务器配置
  * @param {Function} saveConfig - 保存配置函数
