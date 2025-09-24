@@ -4,6 +4,21 @@ A MCP (Model Context Protocol) server for project standards management, designed
 
 ## 📋 Version Updates
 
+### v2.0.0 (2024-12-19) - Major Release
+
+#### 🚀 New Tools & Features
+- **API Login Tool** (`api_login`): Direct login authentication using environment variables
+- **API Debug Tool** (`api_debug`): Simplified API request execution 
+- **API Config Tool** (`api_config`): Comprehensive configuration management
+- **Code Refactoring**: Eliminated duplicate code with shared utilities
+- **Enhanced Environment Variable Support**: Flexible login body formats (JSON/string)
+
+#### 🔧 Technical Improvements
+- **Reduced Code Duplication**: ~70% reduction in duplicate code
+- **Better Error Handling**: Unified error management across tools
+- **Improved Performance**: Faster module loading and execution
+- **Enhanced Maintainability**: Centralized configuration management
+
 ### v1.1.0 (2024-12-19)
 
 #### 🆕 New Features

@@ -7,13 +7,15 @@ const project_structure = require('./utils/get_project_structure');
 const api_standards = require('./utils/get_api_standards');
 const development_standards = require('./utils/get_development_standards');
 const database_standards = require('./utils/database_standards');
+const api_login = require('./utils/api_login');
 const api_debug = require('./utils/api_debug');
+const api_config = require('./utils/api_config');
 
 // Get configuration from file or environment
 const getConfig = () => {
   const configDir = process.env.CONFIG_DIR || './.setting';
   const configPath = path.join(configDir, 'config.json');
-  
+
   try {
     if (fs.existsSync(configPath)) {
       const configData = fs.readFileSync(configPath, 'utf8');
@@ -31,7 +33,7 @@ const getConfig = () => {
 const saveConfig = (config) => {
   const configDir = process.env.CONFIG_DIR || './.setting';
   const configPath = path.join(configDir, 'config.json');
-  
+
   try {
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
@@ -54,11 +56,11 @@ console.error('==============================================');
 class ProjectStandardsMCPServer {
   constructor() {
     this.name = 'project-standards-mcp-server';
-    this.version = '1.0.0';
+    this.version = '1.2.2';
     this.initialized = false;
     this.config = getConfig();
     this.needsProjectFolder = this.config === null;
-    
+
     // 如果配置文件不存在，创建默认配置
     if (this.needsProjectFolder) {
       this.createDefaultConfig();
@@ -69,14 +71,14 @@ class ProjectStandardsMCPServer {
   createDefaultConfig() {
     const configDir = process.env.CONFIG_DIR || './.setting';
     const configPath = path.join(configDir, 'config.json');
-    
+
     try {
       // 创建配置目录
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
         console.error(`Created config directory: ${configDir}`);
       }
-      
+
       // 创建默认配置文件
       const defaultConfig = {
         project_info: {},
@@ -85,10 +87,10 @@ class ProjectStandardsMCPServer {
         development_standards: [],
         database_standards: []
       };
-      
+
       fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
       console.error(`Created default config file: ${configPath}`);
-      
+
       // 更新配置和状态
       this.config = defaultConfig;
       this.needsProjectFolder = false;
@@ -149,13 +151,31 @@ class ProjectStandardsMCPServer {
     return result;
   }
 
-  // API debug tool
+  // API debug tool (legacy)
   async api_debug(params) {
     const result = await api_debug(params, this.config, saveConfig);
     // Update local config if action was 'set'
     if (params?.action === 'set') {
       this.config = getConfig();
     }
+    return result;
+  }
+
+  // API login tool
+  async api_login(params) {
+    const result = await api_login(params, this.config, saveConfig);
+    return result;
+  }
+
+  // API debug tool
+  async api_debug(params) {
+    const result = await api_debug(params, this.config, saveConfig);
+    return result;
+  }
+
+  // API config tool
+  async api_config(params) {
+    const result = await api_config(params, this.config, saveConfig);
     return result;
   }
 
@@ -180,42 +200,42 @@ class ProjectStandardsMCPServer {
           if (!this.initialized) {
             this.initialized = true;
           }
-          
+
           // Build server capabilities to match client capabilities
           const serverCapabilities = {
             tools: {
               listChanged: false
             }
           };
-          
+
           // If client supports prompts, we also support it
           if (params?.capabilities?.prompts) {
             serverCapabilities.prompts = {
               listChanged: false
             };
           }
-          
+
           // If client supports resources, we also support it
           if (params?.capabilities?.resources) {
             serverCapabilities.resources = {
               listChanged: false
             };
           }
-          
+
           // If client supports logging, we also support it
           if (params?.capabilities?.logging) {
             serverCapabilities.logging = {
               listChanged: false
             };
           }
-          
+
           // If client supports roots, we also support it
           if (params?.capabilities?.roots) {
             serverCapabilities.roots = {
               listChanged: false
             };
           }
-          
+
           result = {
             protocolVersion: params?.protocolVersion || '2025-06-18',
             capabilities: serverCapabilities,
@@ -226,7 +246,7 @@ class ProjectStandardsMCPServer {
           };
         } else if (method === 'tools/list') {
           const tools = [];
-          
+
           // Add all tools since config is always available now
           tools.push({
             name: 'project_info',
@@ -266,18 +286,18 @@ class ProjectStandardsMCPServer {
               ]
             }
           });
-          
-          tools.push(              {
-                name: 'project_structure',
-                description: 'Get, set or delete project structure in configuration',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    action: {
-                      type: 'string',
-                      enum: ['get', 'set', 'delete'],
-                      description: 'Action to perform: "get" to retrieve structure, "set" to update structure, "delete" to delete structure item'
-                    },
+
+          tools.push({
+            name: 'project_structure',
+            description: 'Get, set or delete project structure in configuration',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                action: {
+                  type: 'string',
+                  enum: ['get', 'set', 'delete'],
+                  description: 'Action to perform: "get" to retrieve structure, "set" to update structure, "delete" to delete structure item'
+                },
                 structure: {
                   type: 'array',
                   description: 'Array of structure items with path and description (required for "set" action)',
@@ -325,224 +345,246 @@ class ProjectStandardsMCPServer {
               ]
             }
           });
-          
-          tools.push(              {
-                name: 'api_standards',
-                description: 'Get, set or delete API interface standards and best practices',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    action: {
-                      type: 'string',
-                      enum: ['get', 'set', 'delete'],
-                      description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete header'
-                    },
-                    key: {
-                      type: 'string',
-                      enum: ['interfaceType', 'successStructure', 'errorStructure', 'basicHeaders', 'requirements'],
-                      description: 'Key to update when action is "set" (interfaceType|successStructure|errorStructure|basicHeaders|requirements)'
-                    },
-                    value: {
-                      oneOf: [
-                        { type: 'string' },
-                        { type: 'array' }
-                      ],
-                      description: 'Value to set when action is "set" (must be string or array)'
-                    },
-                    forceOverwrite: {
-                      type: 'boolean',
-                      description: 'Force overwrite array values when action is "set" and value is array (default: false)'
-                    },
-                    headerName: {
-                      type: 'string',
-                      description: 'Header name to delete when action is "delete"'
-                    },
-                    requirement: {
-                      type: 'string',
-                      description: 'Requirement content to delete when action is "delete"'
-                    }
-                  },
-                  required: ['action'],
-                  anyOf: [
-                    {
-                      properties: {
-                        action: { const: 'get' }
-                      }
-                    },
-                    {
-                      properties: {
-                        action: { const: 'set' },
-                        key: { type: 'string' },
-                        value: {}
-                      },
-                      required: ['key', 'value']
-                    },
-                    {
-                      properties: {
-                        action: { const: 'delete' },
-                        headerName: { type: 'string' }
-                      },
-                      required: ['headerName']
-                    },
-                    {
-                      properties: {
-                        action: { const: 'delete' },
-                        requirement: { type: 'string' }
-                      },
-                      required: ['requirement']
-                    }
-                  ]
-                }
-              },
-              {
-                name: 'development_standards',
-                description: 'Get, set or delete development standards',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    action: {
-                      type: 'string',
-                      enum: ['get', 'set', 'delete'],
-                      description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete standard'
-                    },
-                    standards: {
-                      type: 'array',
-                      description: 'Array of development standards (required for "set" action)',
-                      items: {
-                        type: 'string'
-                      }
-                    },
-                    forceOverwrite: {
-                      type: 'boolean',
-                      description: 'Force overwrite array values when action is "set" and value is array (default: false)'
-                    },
-                    standard: {
-                      type: 'string',
-                      description: 'Standard content to delete when action is "delete"'
-                    }
-                  },
-                  required: ['action'],
-                  anyOf: [
-                    {
-                      properties: {
-                        action: { const: 'get' }
-                      }
-                    },
-                    {
-                      properties: {
-                        action: { const: 'set' },
-                        standards: { type: 'array' }
-                      },
-                      required: ['standards']
-                    },
-                    {
-                      properties: {
-                        action: { const: 'delete' },
-                        standard: { type: 'string' }
-                      },
-                      required: ['standard']
-                    }
-                  ]
-                }
-              },
-              {
-                name: 'database_standards',
-                description: 'Get, set or delete database standards',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    action: {
-                      type: 'string',
-                      enum: ['get', 'set', 'delete'],
-                      description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete standard'
-                    },
-                    standards: {
-                      type: 'array',
-                      description: 'Array of database standards (required for "set" action)',
-                      items: {
-                        type: 'string'
-                      }
-                    },
-                    forceOverwrite: {
-                      type: 'boolean',
-                      description: 'Force overwrite array values when action is "set" and value is array (default: false)'
-                    },
-                    standard: {
-                      type: 'string',
-                      description: 'Standard content to delete when action is "delete"'
-                    }
-                  },
-                  required: ['action'],
-                  anyOf: [
-                    {
-                      properties: {
-                        action: { const: 'get' }
-                      }
-                    },
-                    {
-                      properties: {
-                        action: { const: 'set' },
-                        standards: { type: 'array' }
-                      },
-                      required: ['standards']
-                    },
-                    {
-                      properties: {
-                        action: { const: 'delete' },
-                        standard: { type: 'string' }
-                      },
-                      required: ['standard']
-                    }
-                  ]
-                }
-              }
-            );
-          
-          // 构建 API 调试工具描述
-          let apiDebugDescription = 'API debugging tool for testing and executing API requests';
-          
-          // 检查是否设置了登录接口环境变量
-          const loginUrl = process.env.API_DEBUG_LOGIN_URL;
-          const loginMethod = process.env.API_DEBUG_LOGIN_METHOD;
-          const loginDescription = process.env.API_DEBUG_LOGIN_DESCRIPTION;
-          const allowedMethods = process.env.API_DEBUG_ALLOWED_METHODS;
-          
-          if (loginUrl || loginMethod || allowedMethods) {
-            apiDebugDescription += '\n\n🔐 Login Authentication Configuration:';
-            
-            if (loginUrl) {
-              apiDebugDescription += `\n- Login URL: ${loginUrl}`;
-            }
-            if (loginMethod) {
-              apiDebugDescription += `\n- Login Method: ${loginMethod}`;
-            }
-            if (loginDescription) {
-              apiDebugDescription += `\n- Login Description: ${loginDescription}`;
-            }
-            if (allowedMethods) {
-              apiDebugDescription += `\n- Allowed Methods: ${allowedMethods}`;
-            }
-            
-            apiDebugDescription += '\n\n💡 Usage Instructions:';
-            apiDebugDescription += '\n- Login API automatically uses environment variable configuration';
-            apiDebugDescription += '\n- Non-login APIs must use allowed methods only';
-            apiDebugDescription += '\n- Common request headers are automatically updated after successful login';
-          }
-          
+
           tools.push({
-            name: 'api_debug',
-            description: apiDebugDescription,
+            name: 'api_standards',
+            description: 'Get, set or delete API interface standards and best practices',
             inputSchema: {
               type: 'object',
               properties: {
-            action: {
-              type: 'string',
-              enum: ['get', 'set', 'delete', 'execute', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'search'],
-              description: 'Action to perform: "get" to retrieve config, "set" to update config, "delete" to delete API, "execute" to execute API, "updateBaseUrl" to update base URL, "updateHeaders" to update headers, "deleteHeader" to delete specific header, "search" to search APIs by URL or description'
+                action: {
+                  type: 'string',
+                  enum: ['get', 'set', 'delete'],
+                  description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete header'
+                },
+                key: {
+                  type: 'string',
+                  enum: ['interfaceType', 'successStructure', 'errorStructure', 'basicHeaders', 'requirements'],
+                  description: 'Key to update when action is "set" (interfaceType|successStructure|errorStructure|basicHeaders|requirements)'
+                },
+                value: {
+                  oneOf: [
+                    { type: 'string' },
+                    { type: 'array' }
+                  ],
+                  description: 'Value to set when action is "set" (must be string or array)'
+                },
+                forceOverwrite: {
+                  type: 'boolean',
+                  description: 'Force overwrite array values when action is "set" and value is array (default: false)'
+                },
+                headerName: {
+                  type: 'string',
+                  description: 'Header name to delete when action is "delete"'
+                },
+                requirement: {
+                  type: 'string',
+                  description: 'Requirement content to delete when action is "delete"'
+                }
+              },
+              required: ['action'],
+              anyOf: [
+                {
+                  properties: {
+                    action: { const: 'get' }
+                  }
+                },
+                {
+                  properties: {
+                    action: { const: 'set' },
+                    key: { type: 'string' },
+                    value: {}
+                  },
+                  required: ['key', 'value']
+                },
+                {
+                  properties: {
+                    action: { const: 'delete' },
+                    headerName: { type: 'string' }
+                  },
+                  required: ['headerName']
+                },
+                {
+                  properties: {
+                    action: { const: 'delete' },
+                    requirement: { type: 'string' }
+                  },
+                  required: ['requirement']
+                }
+              ]
+            }
+          },
+            {
+              name: 'development_standards',
+              description: 'Get, set or delete development standards',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  action: {
+                    type: 'string',
+                    enum: ['get', 'set', 'delete'],
+                    description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete standard'
+                  },
+                  standards: {
+                    type: 'array',
+                    description: 'Array of development standards (required for "set" action)',
+                    items: {
+                      type: 'string'
+                    }
+                  },
+                  forceOverwrite: {
+                    type: 'boolean',
+                    description: 'Force overwrite array values when action is "set" and value is array (default: false)'
+                  },
+                  standard: {
+                    type: 'string',
+                    description: 'Standard content to delete when action is "delete"'
+                  }
+                },
+                required: ['action'],
+                anyOf: [
+                  {
+                    properties: {
+                      action: { const: 'get' }
+                    }
+                  },
+                  {
+                    properties: {
+                      action: { const: 'set' },
+                      standards: { type: 'array' }
+                    },
+                    required: ['standards']
+                  },
+                  {
+                    properties: {
+                      action: { const: 'delete' },
+                      standard: { type: 'string' }
+                    },
+                    required: ['standard']
+                  }
+                ]
+              }
             },
+            {
+              name: 'database_standards',
+              description: 'Get, set or delete database standards',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  action: {
+                    type: 'string',
+                    enum: ['get', 'set', 'delete'],
+                    description: 'Action to perform: "get" to retrieve standards, "set" to update standards, "delete" to delete standard'
+                  },
+                  standards: {
+                    type: 'array',
+                    description: 'Array of database standards (required for "set" action)',
+                    items: {
+                      type: 'string'
+                    }
+                  },
+                  forceOverwrite: {
+                    type: 'boolean',
+                    description: 'Force overwrite array values when action is "set" and value is array (default: false)'
+                  },
+                  standard: {
+                    type: 'string',
+                    description: 'Standard content to delete when action is "delete"'
+                  }
+                },
+                required: ['action'],
+                anyOf: [
+                  {
+                    properties: {
+                      action: { const: 'get' }
+                    }
+                  },
+                  {
+                    properties: {
+                      action: { const: 'set' },
+                      standards: { type: 'array' }
+                    },
+                    required: ['standards']
+                  },
+                  {
+                    properties: {
+                      action: { const: 'delete' },
+                      standard: { type: 'string' }
+                    },
+                    required: ['standard']
+                  }
+                ]
+              }
+            }
+          );
+
+
+          // API Login Tool
+          tools.push({
+            name: 'api_login',
+            description: 'API login authentication tool that uses environment variables for login credentials',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                baseUrl: {
+                  type: 'string',
+                  description: 'Base URL for login request (optional, will override config baseUrl)'
+                }
+              }
+            }
+          });
+
+          // API Debug Tool
+          tools.push({
+            name: 'api_debug',
+            description: 'API debugging tool for directly executing API requests',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                url: {
+                  type: 'string',
+                  description: 'API URL to execute (required)'
+                },
+                method: {
+                  type: 'string',
+                  enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+                  description: 'HTTP method (optional, defaults to GET)'
+                },
+                headers: {
+                  type: 'object',
+                  description: 'Additional headers for the request (optional)'
+                },
+                query: {
+                  type: 'object',
+                  description: 'Query parameters (optional)'
+                },
+                body: {
+                  description: 'Request body (optional)'
+                },
+                contentType: {
+                  type: 'string',
+                  description: 'Content-Type for request body (optional, will auto-detect if not specified)'
+                }
+              },
+              required: ['url']
+            }
+          });
+
+          // API Config Tool
+          tools.push({
+            name: 'api_config',
+            description: 'API configuration management tool for managing API settings, endpoints, and configurations',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                action: {
+                  type: 'string',
+                  enum: ['get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'search', 'list'],
+                  description: 'Action to perform: "get" to retrieve config, "set" to update config, "updateBaseUrl" to update base URL, "updateHeaders" to update headers, "deleteHeader" to delete header, "search" to search APIs, "list" to list all APIs'
+                },
                 config: {
                   type: 'object',
-                  description: 'API debug configuration (required for "set" action)',
+                  description: 'API configuration (required for "set" action)',
                   properties: {
                     baseUrl: {
                       type: 'string',
@@ -554,7 +596,7 @@ class ProjectStandardsMCPServer {
                     },
                     list: {
                       type: 'array',
-                      description: 'List of API endpoints to test',
+                      description: 'List of API endpoints',
                       items: {
                         type: 'object',
                         properties: {
@@ -573,45 +615,41 @@ class ProjectStandardsMCPServer {
                           },
                           query: {
                             type: 'object',
-                            description: 'Query parameters for GET requests'
+                            description: 'Query parameters'
                           },
                           body: {
-                            description: 'Request body for POST/PUT requests'
+                            description: 'Request body'
                           },
                           contentType: {
                             type: 'string',
-                            description: 'Content-Type for request body (optional, will auto-detect if not specified)'
+                            description: 'Content-Type for request body'
                           },
                           header: {
                             type: 'object',
                             description: 'Additional headers for this specific request'
                           }
                         },
-                        required: ['url', 'method']
+                        required: ['url']
                       }
                     }
                   }
                 },
-            index: {
-              type: 'number',
-              description: 'Index of API to delete or execute (required for "delete" and "execute" actions)'
-            },
-            baseUrl: {
-              type: 'string',
-              description: 'New base URL (required for "updateBaseUrl" action)'
-            },
-            headers: {
-              type: 'object',
-              description: 'New headers to add or update (required for "updateHeaders" action)'
-            },
-            headerName: {
-              type: 'string',
-              description: 'Name of header to delete (required for "deleteHeader" action)'
-            },
-            keyword: {
-              type: 'string',
-              description: 'Search keyword to match against URL or description (required for "search" action)'
-            }
+                baseUrl: {
+                  type: 'string',
+                  description: 'New base URL (required for "updateBaseUrl" action)'
+                },
+                headers: {
+                  type: 'object',
+                  description: 'New headers to add or update (required for "updateHeaders" action)'
+                },
+                headerName: {
+                  type: 'string',
+                  description: 'Name of header to delete (required for "deleteHeader" action)'
+                },
+                keyword: {
+                  type: 'string',
+                  description: 'Search keyword (required for "search" action)'
+                }
               },
               required: ['action'],
               anyOf: [
@@ -622,24 +660,15 @@ class ProjectStandardsMCPServer {
                 },
                 {
                   properties: {
+                    action: { const: 'list' }
+                  }
+                },
+                {
+                  properties: {
                     action: { const: 'set' },
                     config: { type: 'object' }
                   },
                   required: ['config']
-                },
-                {
-                  properties: {
-                    action: { const: 'delete' },
-                    index: { type: 'number' }
-                  },
-                  required: ['index']
-                },
-                {
-                  properties: {
-                    action: { const: 'execute' },
-                    index: { type: 'number' }
-                  },
-                  required: ['index']
                 },
                 {
                   properties: {
@@ -672,7 +701,8 @@ class ProjectStandardsMCPServer {
               ]
             }
           });
-          
+
+
           result = {
             tools: tools,
             environment: {
@@ -791,7 +821,7 @@ class ProjectStandardsMCPServer {
       if (method === 'notifications/initialized' || method === 'notifications/exit') {
         return null;
       }
-      
+
       // shutdown method needs to return response
       if (method === 'shutdown') {
         return {
@@ -810,12 +840,12 @@ class ProjectStandardsMCPServer {
       // Use standard MCP error codes
       let errorCode = -32603; // Internal error
       let errorMessage = error.message;
-      
+
       if (error.message.includes('Server not initialized')) {
         errorCode = -32002; // Server not initialized
       } else if (error.message.includes('Unknown method')) {
         errorCode = -32601; // Method not found
-      } else       if (error.message.includes('Unsupported JSON-RPC version')) {
+      } else if (error.message.includes('Unsupported JSON-RPC version')) {
         errorCode = -32600; // Invalid Request
       }
       return {

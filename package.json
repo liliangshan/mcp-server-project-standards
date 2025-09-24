@@ -1,7 +1,7 @@
 {
   "name": "@liangshanli/mcp-server-project-standards",
-  "version": "1.1.0",
-  "description": "MCP Project Standards server with project info, structure, API standards, development standards and custom tools",
+  "version": "2.0.0",
+  "description": "MCP Project Standards server with project info, structure, API standards, development standards, API debugging, login authentication and configuration management tools",
   "main": "bin/cli.js",
   "bin": {
     "mcp-server-project-standards": "bin/cli.js"
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node bin/cli.js",
     "dev": "node --inspect bin/cli.js",
-    "test": "node test-simple.js",
+    "test": "node src/server-final.js --test",
     "start-managed": "node start-server.js",
     "daemon": "node start-server.js",
     "server": "node src/server-final.js"
@@ -20,7 +20,11 @@
     "standards",
     "api",
     "development",
-    "tools"
+    "tools",
+    "debugging",
+    "authentication",
+    "login",
+    "configuration"
   ],
   "author": "liliangshan",
   "license": "MIT",
