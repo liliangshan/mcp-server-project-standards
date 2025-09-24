@@ -66,6 +66,31 @@ async function api_debug(params, config, saveConfig) {
     let requestBody = null;
     if (body && (requestMethod === 'POST' || requestMethod === 'PUT' || requestMethod === 'PATCH')) {
       if (typeof body === 'string') {
+        // 检查是否以 { 开头但无法解析为JSON对象
+        if (body.trim().startsWith('{')) {
+          try {
+            JSON.parse(body);
+            // 如果能解析成功，继续正常处理
+          } catch (parseError) {
+            // 无法解析为JSON，给出建议
+            return {
+              success: false,
+              message: 'Detected body starting with { but cannot be parsed as JSON object. Suggested approach:',
+              suggestion: {
+                step1: 'Use api_config tool to add the API to the list',
+                step2: 'Use api_execute tool to execute the API by index',
+                example: {
+                  addApi: 'api_config with action="addApi" and api={"url":"' + url + '","method":"' + requestMethod + '","body":"' + body + '"}',
+                  execute: 'api_execute with index=<returned index>'
+                }
+              },
+              body: body,
+              parseError: parseError.message,
+              timestamp: new Date().toISOString()
+            };
+          }
+        }
+        
         // 检查是否指定了 Content-Type
         if (contentType) {
           finalHeaders['Content-Type'] = contentType;
