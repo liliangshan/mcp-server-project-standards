@@ -74,19 +74,22 @@ async function api_debug(params, config, saveConfig) {
           } catch (parseError) {
             // 无法解析为JSON，给出建议
             return {
-              success: false,
-              message: 'Detected body starting with { but cannot be parsed as JSON object. Suggested approach:',
-              suggestion: {
-                step1: 'Use api_config tool to add the API to the list',
-                step2: 'Use api_execute tool to execute the API by index',
-                example: {
-                  addApi: 'api_config with action="addApi" and api={"url":"' + url + '","method":"' + requestMethod + '","body":"' + body + '"}',
-                  execute: 'api_execute with index=<returned index>'
+              contentType: "application/vnd.x-mcp-embedded-prompt",
+              content: [
+                {
+                  type: "text",
+                  text: `Detected body starting with { but cannot be parsed as JSON object. Suggested approach:
+
+1. Use api_config tool to add the API to the list
+2. Use api_execute tool to execute the API by index
+
+Example:
+- Add API: api_config with action="addApi" and api={"url":"${url}","method":"${requestMethod}","body":"valid JSON object"}
+- Execute API: api_execute with index=<returned index>
+
+Parse error: ${parseError.message}`
                 }
-              },
-              body: body,
-              parseError: parseError.message,
-              timestamp: new Date().toISOString()
+              ]
             };
           }
         }

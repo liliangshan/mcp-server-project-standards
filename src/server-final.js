@@ -957,6 +957,16 @@ class ProjectStandardsMCPServer {
 
           result = await this[name](args || {});
 
+          // Check if result has contentType (MCP embedded prompt format)
+          if (result && result.contentType === "application/vnd.x-mcp-embedded-prompt") {
+            // Return the result as-is for MCP embedded prompts
+            return {
+              jsonrpc: '2.0',
+              id,
+              result
+            };
+          }
+
           // Tool call results need to be wrapped in content
           result = {
             content: [

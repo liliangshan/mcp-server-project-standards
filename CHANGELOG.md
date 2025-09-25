@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.4] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Enhanced API Debug Error Handling**: Improved JSON parsing error handling in `api_debug` tool
+- **MCP Embedded Prompt Support**: Added support for MCP embedded prompt format when JSON parsing fails
+- **Better Error Messages**: Enhanced error messages with English language support and clearer suggestions
+- **Server Response Optimization**: Updated server to properly handle MCP embedded prompt responses
+
+### 📝 Changes
+- Modified `api_debug.js` to return MCP embedded prompt format for JSON parsing errors
+- Updated `server-final.js` to detect and handle `contentType: "application/vnd.x-mcp-embedded-prompt"`
+- Improved error handling flow for better user experience
+- Enhanced tool response processing for MCP compatibility
+
+---
+
 ## [2.0.3] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements
