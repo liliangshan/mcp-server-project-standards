@@ -74,20 +74,35 @@ async function api_debug(params, config, saveConfig) {
           } catch (parseError) {
             // 无法解析为JSON，给出建议
             return {
-              contentType: "application/vnd.x-mcp-embedded-prompt",
+              contentType: "text",
               content: [
                 {
                   type: "text",
-                  text: `Detected body starting with { but cannot be parsed as JSON object. Suggested approach:
-
-1. Use api_config tool to add the API to the list
-2. Use api_execute tool to execute the API by index
-
-Example:
-- Add API: api_config with action="addApi" and api={"url":"${url}","method":"${requestMethod}","body":"valid JSON object"}
-- Execute API: api_execute with index=<returned index>
-
-Parse error: ${parseError.message}`
+                  text: "❌ JSON Parse Error Detected\n\nThe request body starts with { but cannot be parsed as a valid JSON object."
+                },
+                {
+                  type: "text",
+                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first!\n\nDirect execution is not possible with invalid JSON. You must follow these steps:"
+                },
+                {
+                  type: "text",
+                  text: "🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\nThis will store the API configuration for future use."
+                },
+                {
+                  type: "text",
+                  text: "🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: api_execute with index=<returned index>\n\nThis will execute the pre-configured API with the correct format."
+                },
+                {
+                  type: "text",
+                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Cannot execute API directly with invalid JSON\n- Must add to configuration list using api_config tool\n- Then use api_execute with the returned index"
+                },
+                {
+                  type: "text",
+                  text: "💡 Why This Approach is Required:\n- Invalid JSON cannot be processed directly\n- addApi allows you to fix the JSON format\n- Configuration is saved for reuse\n- Better error handling and debugging"
+                },
+                {
+                  type: "text",
+                  text: "📋 Final Reminder: Use addApi → Then api_execute\n\n1. First: api_config with action=\"addApi\"\n2. Then: api_execute with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests."
                 }
               ]
             };

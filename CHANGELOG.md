@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.5] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Enhanced JSON Parse Error Handling**: Improved error messages with multiple content blocks for better readability
+- **Strengthened API Configuration Guidance**: Added multiple reminders to use addApi before api_execute
+- **Simplified Error Flow**: Removed technical error details, focused on actionable solutions
+- **Better User Experience**: Clear step-by-step guidance with visual indicators and repeated emphasis
+- **Cursor JSON Generation Fix**: Resolved issues with Cursor AI generating invalid JSON in API requests
+
+### 📝 Changes
+- Modified `api_debug.js` to return multiple content blocks instead of single large text
+- Added strong emphasis on using addApi tool before api_execute
+- Removed parse error details from user-facing messages
+- Enhanced visual indicators with emojis and formatting
+- Added multiple reminder blocks to ensure users follow the correct workflow
+- **Fixed Cursor AI JSON Generation Issues**: When Cursor generates invalid JSON, the system now provides clear guidance to use addApi tool instead of attempting direct execution
+
+---
+
 ## [2.1.4] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements

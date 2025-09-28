@@ -1,6 +1,6 @@
 {
   "name": "@liangshanli/mcp-server-project-standards",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "MCP Project Standards server with project info, structure, API standards, development standards, API debugging, login authentication and configuration management tools",
   "main": "bin/cli.js",
   "bin": {
