@@ -605,7 +605,6 @@ class ProjectStandardsMCPServer {
                   ]
                 }
               },
-              required: ['url'],
               examples: [
                 {
                   description: 'Simple GET request',

@@ -32,7 +32,35 @@ async function api_debug(params, config, saveConfig) {
   const { url, method = 'GET', headers = {}, query, body, contentType } = params || {};
   
   if (!url) {
-    throw new Error('Missing url parameter');
+    return {
+      contentType: "text",
+      content: [
+        {
+          type: "text",
+          text: "⚠️ IMPORTANT: URL parameter is required for API debugging!\n\n🔧 Step 1: Provide URL Parameter\n\nCall: api_debug with url parameter\n\nExample: {\"url\": \"/api/users\", \"method\": \"GET\"}\n\n⚠️ REMINDER: URL is required for API execution!"
+        },
+        {
+          type: "text",
+          text: "🔧 Step 2: Optional Parameters\n\nYou can also provide:\n- method: GET, POST, PUT, DELETE, PATCH\n- headers: Additional request headers\n- query: Query parameters\n- body: Request body\n- contentType: Content type override"
+        },
+        {
+          type: "text",
+          text: "🚨 REMINDER: URL is mandatory!\n\n- Use api_debug with url parameter\n- URL can be relative (/api/users) or absolute (https://api.example.com/users)"
+        },
+        {
+          type: "text",
+          text: "💡 IMPORTANT: Remember to provide URL!\n\n- First: api_debug with url parameter\n- Second: Add other optional parameters as needed"
+        },
+        {
+          type: "text",
+          text: "📋 Final Reminder: URL is required\n\n1. First: api_debug with url parameter\n2. Then: Add optional parameters\n\nThis is the ONLY way to execute API requests."
+        },
+        {
+          type: "text",
+          text: "⚠️ ESSENTIAL: URL parameter is required!\n\n- Use api_debug with url parameter\n- URL can be relative or absolute"
+        }
+      ]
+    };
   }
   
   try {
@@ -78,15 +106,7 @@ async function api_debug(params, config, saveConfig) {
               content: [
                 {
                   type: "text",
-                  text: "❌ JSON Parse Error Detected\n\nThe request body starts with { but cannot be parsed as a valid JSON object."
-                },
-                {
-                  type: "text",
-                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first!\n\nDirect execution is not possible with invalid JSON. You must follow these steps:"
-                },
-                {
-                  type: "text",
-                  text: "🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\nThis will store the API configuration for future use."
+                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use api_config tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\n⚠️ REMINDER: You MUST use api_config with addApi to add the API to the list!"
                 },
                 {
                   type: "text",
@@ -94,15 +114,19 @@ async function api_debug(params, config, saveConfig) {
                 },
                 {
                   type: "text",
-                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Cannot execute API directly with invalid JSON\n- Must add to configuration list using api_config tool\n- Then use api_execute with the returned index"
+                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Use api_config with action=\"addApi\" to add the API to the list\n- Then use api_execute with the returned index to execute"
                 },
                 {
                   type: "text",
-                  text: "💡 Why This Approach is Required:\n- Invalid JSON cannot be processed directly\n- addApi allows you to fix the JSON format\n- Configuration is saved for reuse\n- Better error handling and debugging"
+                  text: "💡 IMPORTANT: Remember to use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
                 },
                 {
                   type: "text",
                   text: "📋 Final Reminder: Use addApi → Then api_execute\n\n1. First: api_config with action=\"addApi\"\n2. Then: api_execute with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests."
+                },
+                {
+                  type: "text",
+                  text: "⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
                 }
               ]
             };

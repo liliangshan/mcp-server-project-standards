@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.1.7] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Version Update**: Updated package version for npmjs publication
+- **Code Quality**: Minor improvements and optimizations
+
+---
+
+## [2.1.6] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Enhanced JSON Parse Error Messages**: Improved error message structure with multiple content blocks
+- **Strengthened addApi Reminders**: Added multiple reminder blocks with different wording to emphasize addApi usage
+- **Simplified Error Flow**: Removed explanatory text, focused on actionable solutions
+- **Better User Experience**: Clear step-by-step guidance with varied visual indicators and repeated emphasis
+
+### 📝 Changes
+- Modified `api_debug.js` to use multiple reminder blocks with different wording
+- Added strong emphasis on using addApi tool with varied expressions (IMPORTANT, REMINDER, ESSENTIAL, etc.)
+- Removed explanatory text about why direct execution is not possible
+- Enhanced visual indicators with different emojis and formatting
+- Added multiple reminder blocks to ensure users follow the correct workflow with varied language
+
+---
+
 ## [2.1.5] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements
