@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.8] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Version Update**: Updated package version for npmjs publication
+- **Code Quality**: Minor improvements and optimizations
+
+---
+
 ## [2.1.7] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements
