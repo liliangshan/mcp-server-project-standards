@@ -1,5 +1,10 @@
 const { loadApiConfig, getAllowedMethods } = require('./api_common');
 
+// 设置全局环境变量以跳过证书验证
+if (!process.env.NODE_TLS_REJECT_UNAUTHORIZED) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 /**
  * API 执行工具 - 通过索引执行已配置的API
  * @param {Object} params - 参数
@@ -131,6 +136,7 @@ async function api_execute(params, config, saveConfig) {
     };
     
   } catch (err) {
+    console.error(err);
     throw new Error(`Failed to execute API at index ${index}: ${err.message}`);
   }
 }

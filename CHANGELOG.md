@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.9] - 2024-12-19
+
+### 🔧 Bug Fixes & Improvements
+- **Skip Certificate Verification**: Added support to skip SSL/TLS certificate verification in API requests
+- **Enhanced HTTPS Support**: All API tools now use HTTPS agent to skip certificate validation for testing environments
+- **Certificate Error Resolution**: Fixed certificate verification errors when connecting to self-signed or invalid certificates
+- **Non-global Approach**: Uses per-request HTTPS agent instead of global environment variables
+
+### 📝 Changes
+- Modified `api_debug.js` to use HTTPS agent for skipping certificate verification
+- Modified `api_execute.js` to use HTTPS agent for skipping certificate verification
+- Modified `api_login.js` to use HTTPS agent for skipping certificate verification
+- Added HTTPS agent configuration that only affects specific HTTPS requests without global side effects
+
+---
+
 ## [2.1.8] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements

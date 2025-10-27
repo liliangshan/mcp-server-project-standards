@@ -1,4 +1,10 @@
 const { getLoginUrl, getLoginMethod, getLoginBody, loadApiConfig, saveApiConfig } = require('./api_common');
+const https = require('https');
+
+// 为 HTTPS 请求创建跳过证书验证的 agent
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 /**
  * API 登录工具 - 直接执行登录请求（从环境变量获取登录信息）
@@ -57,11 +63,18 @@ async function api_login(params, config, saveConfig) {
     let error = null;
 
     try {
-      response = await fetch(fullLoginUrl, {
+      const fetchOptions = {
         method: loginMethod,
         headers: headers,
         body: loginBody
-      });
+      };
+      
+      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      if (fullLoginUrl.startsWith('https')) {
+        fetchOptions.agent = httpsAgent;
+      }
+      
+      response = await fetch(fullLoginUrl, fetchOptions);
 
       // 获取响应数据
       const contentType = response.headers.get('content-type');

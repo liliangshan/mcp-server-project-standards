@@ -1,4 +1,10 @@
 const { getAllowedMethods, loadApiConfig, saveApiConfig, detectContentType } = require('./api_common');
+const https = require('https');
+
+// 为 HTTPS 请求创建跳过证书验证的 agent
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 /**
  * API 调试工具 - 直接执行API请求
@@ -33,34 +39,34 @@ async function api_debug(params, config, saveConfig) {
   
   if (!url) {
     return {
-      contentType: "text",
-      content: [
-        {
-          type: "text",
-          text: "⚠️ IMPORTANT: URL parameter is required for API debugging!\n\n🔧 Step 1: Provide URL Parameter\n\nCall: api_debug with url parameter\n\nExample: {\"url\": \"/api/users\", \"method\": \"GET\"}\n\n⚠️ REMINDER: URL is required for API execution!"
-        },
-        {
-          type: "text",
-          text: "🔧 Step 2: Optional Parameters\n\nYou can also provide:\n- method: GET, POST, PUT, DELETE, PATCH\n- headers: Additional request headers\n- query: Query parameters\n- body: Request body\n- contentType: Content type override"
-        },
-        {
-          type: "text",
-          text: "🚨 REMINDER: URL is mandatory!\n\n- Use api_debug with url parameter\n- URL can be relative (/api/users) or absolute (https://api.example.com/users)"
-        },
-        {
-          type: "text",
-          text: "💡 IMPORTANT: Remember to provide URL!\n\n- First: api_debug with url parameter\n- Second: Add other optional parameters as needed"
-        },
-        {
-          type: "text",
-          text: "📋 Final Reminder: URL is required\n\n1. First: api_debug with url parameter\n2. Then: Add optional parameters\n\nThis is the ONLY way to execute API requests."
-        },
-        {
-          type: "text",
-          text: "⚠️ ESSENTIAL: URL parameter is required!\n\n- Use api_debug with url parameter\n- URL can be relative or absolute"
-        }
-      ]
-    };
+              contentType: "text",
+              content: [
+                {
+                  type: "text",
+                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use api_config tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\n⚠️ REMINDER: You MUST use api_config with addApi to add the API to the list!"
+                },
+                {
+                  type: "text",
+                  text: "🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: api_execute with index=<returned index>\n\nThis will execute the pre-configured API with the correct format."
+                },
+                {
+                  type: "text",
+                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Use api_config with action=\"addApi\" to add the API to the list\n- Then use api_execute with the returned index to execute"
+                },
+                {
+                  type: "text",
+                  text: "💡 IMPORTANT: Remember to use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                },
+                {
+                  type: "text",
+                  text: "📋 Final Reminder: Use addApi → Then api_execute\n\n1. First: api_config with action=\"addApi\"\n2. Then: api_execute with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests."
+                },
+                {
+                  type: "text",
+                  text: "⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                }
+              ]
+            };
   }
   
   try {
@@ -190,11 +196,18 @@ async function api_debug(params, config, saveConfig) {
     
     try {
       // 执行请求
-      response = await fetch(finalRequestUrl, {
+      const fetchOptions = {
         method: requestMethod,
         headers: finalHeaders,
         body: requestBody
-      });
+      };
+      
+      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      if (finalRequestUrl.startsWith('https')) {
+        fetchOptions.agent = httpsAgent;
+      }
+      
+      response = await fetch(finalRequestUrl, fetchOptions);
       
       // 获取响应数据
       const responseContentType = response.headers.get('content-type');
@@ -215,23 +228,104 @@ async function api_debug(params, config, saveConfig) {
     }
     
     if (success && response) {
-      return {
-        success: true,
-        message: `Successfully executed API: ${url}`,
-        request: {
-          url: finalRequestUrl,
-          method: requestMethod,
-          headers: finalHeaders,
-          body: requestBody
-        },
-        response: {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          data: responseData
-        },
-        timestamp: new Date().toISOString()
-      };
+      // 自动将接口添加到配置列表中
+      try {
+        const apiConfig = loadApiConfig();
+        if (!apiConfig.list) {
+          apiConfig.list = [];
+        }
+        
+        // 检查是否已存在相同的接口
+        const existingApiIndex = apiConfig.list.findIndex(api => 
+          api.url === url && api.method === requestMethod
+        );
+        
+        if (existingApiIndex === -1) {
+          // 如果不存在，添加到列表
+          const newApi = {
+            url: url,
+            method: requestMethod,
+            description: `API added from api_debug: ${url}`,
+            headers: headers,
+            query: query,
+            body: body,
+            contentType: contentType
+          };
+          
+          apiConfig.list.push(newApi);
+          saveApiConfig(apiConfig);
+          
+          return {
+            success: true,
+            message: `Successfully executed API: ${url} (Added to list at index ${apiConfig.list.length - 1})`,
+            apiIndex: apiConfig.list.length - 1,
+            request: {
+              url: finalRequestUrl,
+              method: requestMethod,
+              headers: finalHeaders,
+              body: requestBody
+            },
+            response: {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries()),
+              data: responseData
+            },
+            timestamp: new Date().toISOString()
+          };
+        } else {
+          // 如果已存在，更新接口信息
+          apiConfig.list[existingApiIndex] = {
+            ...apiConfig.list[existingApiIndex],
+            url: url,
+            method: requestMethod,
+            headers: headers,
+            query: query,
+            body: body,
+            contentType: contentType
+          };
+          saveApiConfig(apiConfig);
+          
+          return {
+            success: true,
+            message: `Successfully executed API: ${url} (Updated existing API at index ${existingApiIndex})`,
+            apiIndex: existingApiIndex,
+            request: {
+              url: finalRequestUrl,
+              method: requestMethod,
+              headers: finalHeaders,
+              body: requestBody
+            },
+            response: {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries()),
+              data: responseData
+            },
+            timestamp: new Date().toISOString()
+          };
+        }
+      } catch (saveError) {
+        // 如果保存失败，仍然返回成功响应
+        console.error('Failed to save API to list:', saveError.message);
+        return {
+          success: true,
+          message: `Successfully executed API: ${url} (Failed to save to list)`,
+          request: {
+            url: finalRequestUrl,
+            method: requestMethod,
+            headers: finalHeaders,
+            body: requestBody
+          },
+          response: {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            data: responseData
+          },
+          timestamp: new Date().toISOString()
+        };
+      }
     } else {
       return {
         success: false,
