@@ -1,5 +1,14 @@
 ### MCP 项目标准服务器 v3.0.0：多项目统一开发的“标准化中枢”
 
+GitHub：`https://github.com/liliangshan/mcp-server-project-standards`
+
+NPM：`https://www.npmjs.com/package/@liangshanli/mcp-server-project-standards`
+
+安装（全局）：
+```bash
+npm install -g @liangshanli/mcp-server-project-standards
+```
+
 在同一个项目中，往往会拆分为后端服务、前端界面、用户管理中心、管理员管理中心等多个子域。借助本工具，团队可以在同一开发项目内，为不同模块定义、承载并执行各自的接口与规范：登录/鉴权流程、通用请求头、错误结构、调试与执行策略均可按模块独立配置，同时又在统一的标准框架下协同运转，实现“统一治理、按域隔离、就近复用”的工程最佳实践。
 
 在日益复杂的团队协作与多项目并行开发背景下，如何让不同项目在不同机器、不同 AI 工具之间保持一致的“标准感知”和“执行体验”，成为提升工程效率与质量的关键。本次 v3.0.0 重大发布，围绕“多项目配置隔离”“工具前缀体系”“一致的路径解析与自动路由”三个维度进行了系统优化，目标是让团队在多项目同时推进时，也能获得稳定、统一、可治理的开发标准体验。
@@ -63,26 +72,6 @@ Cursor（单项目示例）：
 ```
 
 
----
-
-### English Version
-
-In a single product, teams often split work into multiple domains: backend services, frontend UI, user portal, and admin portal. With this tool, each module can define and run its own API workflows and standards within the same project—login/auth flows, common headers, error structures, and debugging/execution policies can be configured per domain—while still operating under a unified standard framework. This enables centralized governance, domain isolation, and local reuse.
-
-As collaboration scales and projects run in parallel, keeping a consistent sense of standards and execution across machines and AI tools becomes critical. v3.0.0 focuses on three pillars—multi-project configuration isolation, a tool prefix system, and unified path resolution with auto-routing—so your team can achieve stable, unified, governable development.
-
-Key change highlights:
-- Unified `getConfigDir()` logic: `CONFIG_DIR` if set; else `./.setting.<TOOL_PREFIX>` when prefix is set; otherwise `./.setting`.
-- Prefixed tool names and project-branded descriptions in `tools/list` when both `TOOL_PREFIX` and `PROJECT_NAME` are provided.
-- Automatic prefix stripping in `tools/call`: calling `xxx_api_debug` routes to `api_debug` transparently.
-
-Core benefits:
-- Strong isolation with low coupling per domain via environment-only configuration.
-- Recognizable and governable collaboration with consistent naming and branding.
-- Lower cognitive load for AI tools; prefixed calls are routed automatically.
-
-Editor integration examples are provided above for Cursor and VS Code, covering both single-project and multi-project setups.
-
 Cursor（多项目示例）：
 ```json
 {
@@ -135,6 +124,138 @@ VS Code（单项目示例）：
 ```
 
 VS Code（多项目示例）：
+```json
+{
+  "mcp.servers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "项目A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "项目B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+
+---
+
+### English Version
+
+GitHub: `https://github.com/liliangshan/mcp-server-project-standards`
+
+NPM: `https://www.npmjs.com/package/@liangshanli/mcp-server-project-standards`
+
+Installation (global):
+```bash
+npm install -g @liangshanli/mcp-server-project-standards
+```
+
+In a single product, teams often split work into multiple domains: backend services, frontend UI, user portal, and admin portal. With this tool, each module can define and run its own API workflows and standards within the same project—login/auth flows, common headers, error structures, and debugging/execution policies can be configured per domain—while still operating under a unified standard framework. This enables centralized governance, domain isolation, and local reuse.
+
+As collaboration scales and projects run in parallel, keeping a consistent sense of standards and execution across machines and AI tools becomes critical. v3.0.0 focuses on three pillars—multi-project configuration isolation, a tool prefix system, and unified path resolution with auto-routing—so your team can achieve stable, unified, governable development.
+
+Key change highlights:
+- Unified `getConfigDir()` logic: `CONFIG_DIR` if set; else `./.setting.<TOOL_PREFIX>` when prefix is set; otherwise `./.setting`.
+- Prefixed tool names and project-branded descriptions in `tools/list` when both `TOOL_PREFIX` and `PROJECT_NAME` are provided.
+- Automatic prefix stripping in `tools/call`: calling `xxx_api_debug` routes to `api_debug` transparently.
+
+Core benefits:
+- Strong isolation with low coupling per domain via environment-only configuration.
+- Recognizable and governable collaboration with consistent naming and branding.
+- Lower cognitive load for AI tools; prefixed calls are routed automatically.
+
+Editor integration examples for both single-project and multi-project setups:
+
+Cursor (single project):
+```json
+{
+  "mcpServers": {
+    "project-standards": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+Cursor (multi project):
+```json
+{
+  "mcpServers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "项目A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "项目B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+VS Code (single project):
+```json
+{
+  "mcp.servers": {
+    "project-standards": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+VS Code (multi project):
 ```json
 {
   "mcp.servers": {
