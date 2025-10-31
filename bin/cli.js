@@ -27,16 +27,31 @@ let server = null;
 // Function to start server
 function startServer() {
   // Create environment object
+  // Determine CONFIG_DIR: use env var if set, otherwise use .setting with TOOL_PREFIX if available
+  let configDir = process.env.CONFIG_DIR;
+  if (!configDir) {
+    const toolPrefix = process.env.TOOL_PREFIX || '';
+    if (toolPrefix) {
+      configDir = `./.setting.${toolPrefix}`;
+    } else {
+      configDir = './.setting';
+    }
+  }
+  
   const env = {
     ...process.env,
-    // Set CONFIG_DIR if specified, otherwise use default
-    CONFIG_DIR: process.env.CONFIG_DIR || './.setting',
+    // Set CONFIG_DIR based on logic above
+    CONFIG_DIR: configDir,
     // API Debug environment variables
     API_DEBUG_ALLOWED_METHODS: process.env.API_DEBUG_ALLOWED_METHODS || 'GET',
     API_DEBUG_LOGIN_URL: process.env.API_DEBUG_LOGIN_URL || '/api/login',
     API_DEBUG_LOGIN_METHOD: process.env.API_DEBUG_LOGIN_METHOD || 'POST',
     API_DEBUG_LOGIN_BODY: process.env.API_DEBUG_LOGIN_BODY || '{"username":"","password":""}',
-    API_DEBUG_LOGIN_DESCRIPTION: process.env.API_DEBUG_LOGIN_DESCRIPTION || 'Save returned token to common headers in debug tool, field name Authorization, field value Bearer token'
+    API_DEBUG_LOGIN_DESCRIPTION: process.env.API_DEBUG_LOGIN_DESCRIPTION || 'Save returned token to common headers in debug tool, field name Authorization, field value Bearer token',
+    // Tool prefix for naming/identification
+    TOOL_PREFIX: process.env.TOOL_PREFIX || '',
+    // Project name for display/metadata
+    PROJECT_NAME: process.env.PROJECT_NAME || ''
   };
 
   // Convert allowed methods to uppercase if specified

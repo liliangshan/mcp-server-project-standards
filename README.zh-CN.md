@@ -4,6 +4,27 @@
 
 ## 📋 版本更新说明
 
+### v3.0.0 (2025-10-31) - 重大更新
+
+#### 🚀 破坏性变更
+- 配置目录解析新增 `TOOL_PREFIX` 参与：
+  - 若设置了 `CONFIG_DIR`，优先使用该值
+  - 若未设置 `CONFIG_DIR` 且设置了 `TOOL_PREFIX`，使用 `./.setting.<TOOL_PREFIX>`
+  - 否则默认 `./.setting`
+- 在 `tools/call` 中，若工具名带有前缀（如 `xxx_api_debug` 且 `TOOL_PREFIX=xxx`），调用时会自动去除前缀，路由到真实方法（`api_debug`）。
+
+#### ✨ 新增 / 改进
+- 在 `server-final.js` 与 `api_common.js` 中统一使用 `getConfigDir()`
+- `tools/list` 环境信息展示最终生效的 `CONFIG_DIR`
+- 同时存在 `TOOL_PREFIX` 和 `PROJECT_NAME` 时，工具名自动加前缀、描述自动加项目名
+
+#### 🧹 清理
+- 移除了重复的旧版 `api_debug` 方法定义
+
+#### 💡 优势
+- 多项目隔离更简单：通过 `TOOL_PREFIX` 即可实现每项目独立配置，无需改代码
+- 切换零侵入：仅改环境变量即可切换项目上下文
+- 调用更顺滑：客户端可使用带前缀名，服务端自动剥前缀并精准路由
 ### v1.1.0 (2024-12-19)
 
 #### 🆕 新增功能
@@ -112,7 +133,9 @@ npm install
 
 | 变量名 | 默认值 | 描述 | 示例 |
 |--------|--------|------|------|
-| CONFIG_DIR | ./.setting | 配置文件目录（包含 config.json 和 api.json） | `export CONFIG_DIR="./config"` |
+| CONFIG_DIR | ./.setting 或 ./.setting.<TOOL_PREFIX> | 配置目录。若设置则直接使用；否则若设置了 TOOL_PREFIX 则使用 ./.setting.<TOOL_PREFIX>；否则 ./.setting | `export CONFIG_DIR="./config"` |
+| TOOL_PREFIX |  | 工具名前缀，同时用于多项目配置隔离 | `export TOOL_PREFIX="projA"` |
+| PROJECT_NAME |  | 工具描述前添加项目名称用于标识 | `export PROJECT_NAME="MyProject"` |
 | API_DEBUG_ALLOWED_METHODS | GET | 控制允许的请求方法（支持：GET,POST,PUT,DELETE,PATCH等） | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
 | API_DEBUG_LOGIN_URL | /api/login | 设置登录接口 URL | `export API_DEBUG_LOGIN_URL="/api/auth/login"` |
 | API_DEBUG_LOGIN_METHOD | POST | 设置登录请求方法 | `export API_DEBUG_LOGIN_METHOD="POST"` |
@@ -199,7 +222,7 @@ npm run dev
 
 ### Cursor 编辑器配置
 
-1. 在项目根目录创建 `.cursor/mcp.json` 文件：
+1）单项目示例（不做前缀隔离）：
 
 ```json
 {
@@ -220,10 +243,42 @@ npm run dev
 }
 ```
 
+2）多项目示例（使用 TOOL_PREFIX + PROJECT_NAME）：
+
+```json
+{
+  "mcpServers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "项目A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "项目B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
 ### VS Code 配置
 
-1. 安装 VS Code 的 MCP 扩展
-2. 创建 `.vscode/settings.json` 文件：
+1）单项目示例（不做前缀隔离）：
 
 ```json
 {
@@ -236,8 +291,40 @@ npm run dev
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
         "API_DEBUG_LOGIN_METHOD": "POST",
-        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
-        "API_DEBUG_LOGIN_DESCRIPTION": "将返回的token保存到调试工具中的公共header，字段名Authorization，字段值是Bearer token"
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+2）多项目示例（使用 TOOL_PREFIX + PROJECT_NAME）：
+
+```json
+{
+  "mcp.servers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "项目A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "项目B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
       }
     }
   }

@@ -1,5 +1,134 @@
 # Changelog
 
+## [3.0.0] - 2025-10-31
+
+### 🚀 Breaking Changes
+- Config directory resolution now depends on both `CONFIG_DIR` and `TOOL_PREFIX`:
+  - If `CONFIG_DIR` is set, it is used as-is
+  - If `CONFIG_DIR` is not set and `TOOL_PREFIX` is set, use `./.setting.<TOOL_PREFIX>`
+  - Otherwise default to `./.setting`
+- `tools/call` now strips the `TOOL_PREFIX` from tool names before method dispatch. If you call `xxx_api_debug` (with `TOOL_PREFIX=xxx`), the server will route the call to `api_debug` internally.
+
+### ✨ New/Improved
+- Unified config path logic via `getConfigDir()` in `src/utils/api_common.js` and `src/server-final.js`
+- Server startup logs and `tools/list` environment now reflect the resolved `CONFIG_DIR`
+- Reduced confusion when using prefixed tool names: automatic prefix removal on call
+- Documentation: Editor integration now includes both single-project and multi-project examples (Cursor/VS Code)
+
+### 🧩 Editor Integration Examples
+
+Cursor (single-project):
+```json
+{
+  "mcpServers": {
+    "project-standards": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+Cursor (multi-project):
+```json
+{
+  "mcpServers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "Project A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "Project B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+VS Code (single-project):
+```json
+{
+  "mcp.servers": {
+    "project-standards": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "CONFIG_DIR": "./.setting",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+VS Code (multi-project):
+```json
+{
+  "mcp.servers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "Project A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "Project B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+### 🧹 Cleanup
+- Removed duplicate legacy `api_debug` method definition in `src/server-final.js`
+
+### 📝 Files Changed
+- `src/server-final.js`: add `getConfigDir()`, use it in read/write, log, tools/list env; strip tool prefix in `tools/call`; remove duplicate `api_debug`
+- `src/utils/api_common.js`: add `getConfigDir()`, use for api.json read/write
+- `bin/cli.js`: ensure env propagation of `TOOL_PREFIX` and `CONFIG_DIR` behavior per above
+
+---
+
 ## [2.1.9] - 2024-12-19
 
 ### 🔧 Bug Fixes & Improvements

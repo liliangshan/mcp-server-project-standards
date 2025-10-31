@@ -13,9 +13,23 @@ const api_config = require('./utils/api_config');
 const api_help = require('./utils/api_help');
 const api_execute = require('./utils/api_execute');
 
+// Get config directory based on CONFIG_DIR and TOOL_PREFIX
+const getConfigDir = () => {
+  let configDir = process.env.CONFIG_DIR;
+  if (!configDir) {
+    const toolPrefix = process.env.TOOL_PREFIX || '';
+    if (toolPrefix) {
+      configDir = `./.setting.${toolPrefix}`;
+    } else {
+      configDir = './.setting';
+    }
+  }
+  return configDir;
+};
+
 // Get configuration from file or environment
 const getConfig = () => {
-  const configDir = process.env.CONFIG_DIR || './.setting';
+  const configDir = getConfigDir();
   const configPath = path.join(configDir, 'config.json');
 
   try {
@@ -33,7 +47,7 @@ const getConfig = () => {
 
 // Save configuration to file
 const saveConfig = (config) => {
-  const configDir = process.env.CONFIG_DIR || './.setting';
+  const configDir = getConfigDir();
   const configPath = path.join(configDir, 'config.json');
 
   try {
@@ -51,7 +65,7 @@ const saveConfig = (config) => {
 // 启动日志
 console.error('=== MCP Project Standards Server Starting ===');
 console.error(`Time: ${new Date().toISOString()}`);
-console.error(`Config Dir: ${process.env.CONFIG_DIR || './.setting'}`);
+console.error(`Config Dir: ${getConfigDir()}`);
 console.error('==============================================');
 
 // Final MCP Server
@@ -71,7 +85,7 @@ class ProjectStandardsMCPServer {
 
   // 创建默认配置文件
   createDefaultConfig() {
-    const configDir = process.env.CONFIG_DIR || './.setting';
+    const configDir = getConfigDir();
     const configPath = path.join(configDir, 'config.json');
 
     try {
@@ -146,16 +160,6 @@ class ProjectStandardsMCPServer {
   // Database standards tool
   async database_standards(params) {
     const result = await database_standards(params, this.config, saveConfig);
-    // Update local config if action was 'set'
-    if (params?.action === 'set') {
-      this.config = getConfig();
-    }
-    return result;
-  }
-
-  // API debug tool (legacy)
-  async api_debug(params) {
-    const result = await api_debug(params, this.config, saveConfig);
     // Update local config if action was 'set'
     if (params?.action === 'set') {
       this.config = getConfig();
@@ -874,11 +878,24 @@ class ProjectStandardsMCPServer {
             }
           });
 
+          // Apply tool prefix and project name if both provided
+          const toolPrefix = process.env.TOOL_PREFIX || '';
+          const projectName = process.env.PROJECT_NAME || '';
+          let finalTools = tools;
+          if (toolPrefix && projectName) {
+            finalTools = tools.map(t => ({
+              ...t,
+              name: `${toolPrefix}_${t.name}`,
+              description: `${projectName} - ${t.description}`
+            }));
+          }
 
           result = {
-            tools: tools,
+            tools: finalTools,
             environment: {
-              CONFIG_DIR: process.env.CONFIG_DIR || './.setting',
+              CONFIG_DIR: getConfigDir(),
+              PROJECT_NAME: process.env.PROJECT_NAME || '',
+              TOOL_PREFIX: process.env.TOOL_PREFIX || '',
               serverInfo: {
                 name: this.name,
                 version: this.version
@@ -949,12 +966,19 @@ class ProjectStandardsMCPServer {
             throw new Error('Missing tool name');
           }
 
+          // Remove tool prefix if present
+          const toolPrefix = process.env.TOOL_PREFIX || '';
+          let actualToolName = name;
+          if (toolPrefix && name.startsWith(`${toolPrefix}_`)) {
+            actualToolName = name.substring(toolPrefix.length + 1);
+          }
+
           // Check if method exists
-          if (!this[name]) {
+          if (!this[actualToolName]) {
             throw new Error(`Unknown tool: ${name}`);
           }
 
-          result = await this[name](args || {});
+          result = await this[actualToolName](args || {});
 
           // Check if result has contentType (special format)
           if (result && result.contentType === "text") {

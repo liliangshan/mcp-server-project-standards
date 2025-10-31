@@ -4,6 +4,28 @@ A MCP (Model Context Protocol) server for project standards management, designed
 
 ## 📋 Version Updates
 
+### v3.0.0 (2025-10-31) - Major Release
+
+#### 🚀 Breaking Changes
+- Config directory resolution now depends on both `CONFIG_DIR` and `TOOL_PREFIX`:
+  - If `CONFIG_DIR` is set, it is used as-is
+  - If `CONFIG_DIR` is not set and `TOOL_PREFIX` is set, use `./.setting.<TOOL_PREFIX>`
+  - Otherwise default to `./.setting`
+- `tools/call` now strips the `TOOL_PREFIX` from tool names before method dispatch. If you call `xxx_api_debug` (with `TOOL_PREFIX=xxx`), the server routes the call to `api_debug` internally.
+
+#### ✨ New/Improved
+- Unified `getConfigDir()` used by both `server-final.js` and `api_common.js`
+- `tools/list` shows environment with resolved `CONFIG_DIR`
+- Prefixed tool names and project-branded descriptions when both `TOOL_PREFIX` and `PROJECT_NAME` are provided
+
+#### 🧹 Cleanup
+- Removed duplicate legacy `api_debug` method definition
+
+#### 💡 Benefits
+- Multi-project isolation: simple per-project segregation via `TOOL_PREFIX` without code changes
+- Zero-friction switching: swap project context by environment only
+- Smoother tool calling: clients can call prefixed names, server auto-routes
+
 ### v2.0.0 (2024-12-19) - Major Release
 
 #### 🚀 New Tools & Features
@@ -127,7 +149,9 @@ The server uses the `./.setting/` directory to store configuration files by defa
 
 | Variable | Default | Description | Example |
 |----------|---------|-------------|---------|
-| CONFIG_DIR | ./.setting | Configuration file directory (contains config.json and api.json) | `export CONFIG_DIR="./config"` |
+| CONFIG_DIR | ./.setting or ./.setting.<TOOL_PREFIX> | Configuration directory. If set, used as-is; else if TOOL_PREFIX set, uses ./.setting.<TOOL_PREFIX>; else ./.setting | `export CONFIG_DIR="./config"` |
+| TOOL_PREFIX |  | Optional tool prefix for tool names and config isolation | `export TOOL_PREFIX="projA"` |
+| PROJECT_NAME |  | Optional project branding for tool descriptions | `export PROJECT_NAME="MyProject"` |
 | API_DEBUG_ALLOWED_METHODS | GET | Control allowed request methods (supports: GET,POST,PUT,DELETE,PATCH, etc.) | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
 | API_DEBUG_LOGIN_URL | /api/login | Set login API URL | `export API_DEBUG_LOGIN_URL="/api/auth/login"` |
 | API_DEBUG_LOGIN_METHOD | POST | Set login request method | `export API_DEBUG_LOGIN_METHOD="POST"` |
@@ -214,7 +238,7 @@ npm run dev
 
 ### Cursor Editor Configuration
 
-1. Create `.cursor/mcp.json` file in your project root:
+1) Single-project example (no prefix isolation):
 
 ```json
 {
@@ -235,10 +259,42 @@ npm run dev
 }
 ```
 
+2) Multi-project example (with TOOL_PREFIX + PROJECT_NAME):
+
+```json
+{
+  "mcpServers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "Project A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "Project B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
 ### VS Code Configuration
 
-1. Install the MCP extension for VS Code
-2. Create `.vscode/settings.json` file:
+1) Single-project example (no prefix isolation):
 
 ```json
 {
@@ -251,8 +307,40 @@ npm run dev
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
         "API_DEBUG_LOGIN_METHOD": "POST",
-        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}",
-        "API_DEBUG_LOGIN_DESCRIPTION": "Save returned token to common headers in debug tool, field name Authorization, field value Bearer token"
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    }
+  }
+}
+```
+
+2) Multi-project example (with TOOL_PREFIX + PROJECT_NAME):
+
+```json
+{
+  "mcp.servers": {
+    "project-standards-A": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projA",
+        "PROJECT_NAME": "Project A",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"username\":\"\",\"password\":\"\"}"
+      }
+    },
+    "project-standards-B": {
+      "command": "npx",
+      "args": ["@liangshanli/mcp-server-project-standards"],
+      "env": {
+        "TOOL_PREFIX": "projB",
+        "PROJECT_NAME": "Project B",
+        "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
+        "API_DEBUG_LOGIN_URL": "/api/auth/login",
+        "API_DEBUG_LOGIN_METHOD": "POST",
+        "API_DEBUG_LOGIN_BODY": "{\"mobile\":\"\",\"password\":\"\"}"
       }
     }
   }

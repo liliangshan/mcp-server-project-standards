@@ -37,33 +37,40 @@ const httpsAgent = new https.Agent({
 async function api_debug(params, config, saveConfig) {
   const { url, method = 'GET', headers = {}, query, body, contentType } = params || {};
   
+  // Resolve dynamic tool names based on prefix and project name
+  const toolPrefix = process.env.TOOL_PREFIX || '';
+  const projectName = process.env.PROJECT_NAME || '';
+  const hasCustomTools = !!(toolPrefix && projectName);
+  const configToolName = hasCustomTools ? `${toolPrefix}_api_config` : 'api_config';
+  const executeToolName = hasCustomTools ? `${toolPrefix}_api_execute` : 'api_execute';
+  
   if (!url) {
     return {
               contentType: "text",
               content: [
                 {
                   type: "text",
-                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use api_config tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\n⚠️ REMINDER: You MUST use api_config with addApi to add the API to the list!"
+                  text: `⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use ${configToolName} tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: ${configToolName} with action="addApi" and api={"url":"<your url>","method":"<METHOD>","body":"your corrected JSON here"}\n\n⚠️ REMINDER: You MUST use ${configToolName} with addApi to add the API to the list!`
                 },
                 {
                   type: "text",
-                  text: "🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: api_execute with index=<returned index>\n\nThis will execute the pre-configured API with the correct format."
+                  text: `🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: ${executeToolName} with index=<returned index>\n\nThis will execute the pre-configured API with the correct format.`
                 },
                 {
                   type: "text",
-                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Use api_config with action=\"addApi\" to add the API to the list\n- Then use api_execute with the returned index to execute"
+                  text: `🚨 REMINDER: You MUST use addApi first!\n\n- Use ${configToolName} with action="addApi" to add the API to the list\n- Then use ${executeToolName} with the returned index to execute`
                 },
                 {
                   type: "text",
-                  text: "💡 IMPORTANT: Remember to use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                  text: `💡 IMPORTANT: Remember to use addApi!\n\n- First: ${configToolName} with action="addApi" to add the API\n- Second: ${executeToolName} with index to run the API`
                 },
                 {
                   type: "text",
-                  text: "📋 Final Reminder: Use addApi → Then api_execute\n\n1. First: api_config with action=\"addApi\"\n2. Then: api_execute with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests."
+                  text: `📋 Final Reminder: Use addApi → Then ${executeToolName}\n\n1. First: ${configToolName} with action="addApi"\n2. Then: ${executeToolName} with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests.`
                 },
                 {
                   type: "text",
-                  text: "⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                  text: `⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: ${configToolName} with action="addApi" to add the API\n- Second: ${executeToolName} with index to run the API`
                 }
               ]
             };
@@ -112,27 +119,27 @@ async function api_debug(params, config, saveConfig) {
               content: [
                 {
                   type: "text",
-                  text: "⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use api_config tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: api_config with action=\"addApi\" and api={\"url\":\"${url}\",\"method\":\"${requestMethod}\",\"body\":\"your corrected JSON here\"}\n\n⚠️ REMINDER: You MUST use api_config with addApi to add the API to the list!"
+                  text: `⚠️ IMPORTANT: You MUST use addApi to add the API to the list first! Use ${configToolName} tool.\n\n🔧 Step 1: Add API to Configuration (REQUIRED)\n\nCall: ${configToolName} with action="addApi" and api={"url":"${url}","method":"${requestMethod}","body":"your corrected JSON here"}\n\n⚠️ REMINDER: You MUST use ${configToolName} with addApi to add the API to the list!`
                 },
                 {
                   type: "text",
-                  text: "🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: api_execute with index=<returned index>\n\nThis will execute the pre-configured API with the correct format."
+                  text: `🔧 Step 2: Execute API by Index\n\nAfter adding the API, call: ${executeToolName} with index=<returned index>\n\nThis will execute the pre-configured API with the correct format.`
                 },
                 {
                   type: "text",
-                  text: "🚨 REMINDER: You MUST use addApi first!\n\n- Use api_config with action=\"addApi\" to add the API to the list\n- Then use api_execute with the returned index to execute"
+                  text: `🚨 REMINDER: You MUST use addApi first!\n\n- Use ${configToolName} with action="addApi" to add the API to the list\n- Then use ${executeToolName} with the returned index to execute`
                 },
                 {
                   type: "text",
-                  text: "💡 IMPORTANT: Remember to use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                  text: `💡 IMPORTANT: Remember to use addApi!\n\n- First: ${configToolName} with action="addApi" to add the API\n- Second: ${executeToolName} with index to run the API`
                 },
                 {
                   type: "text",
-                  text: "📋 Final Reminder: Use addApi → Then api_execute\n\n1. First: api_config with action=\"addApi\"\n2. Then: api_execute with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests."
+                  text: `📋 Final Reminder: Use addApi → Then ${executeToolName}\n\n1. First: ${configToolName} with action="addApi"\n2. Then: ${executeToolName} with index=<number>\n\nThis is the ONLY way to handle invalid JSON requests.`
                 },
                 {
                   type: "text",
-                  text: "⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: api_config with action=\"addApi\" to add the API\n- Second: api_execute with index to run the API"
+                  text: `⚠️ ESSENTIAL: You MUST use addApi!\n\n- First: ${configToolName} with action="addApi" to add the API\n- Second: ${executeToolName} with index to run the API`
                 }
               ]
             };

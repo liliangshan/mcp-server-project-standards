@@ -1,9 +1,23 @@
 const fs = require('fs-extra');
 const path = require('path');
 
+// Get config directory based on CONFIG_DIR and TOOL_PREFIX
+const getConfigDir = () => {
+  let configDir = process.env.CONFIG_DIR;
+  if (!configDir) {
+    const toolPrefix = process.env.TOOL_PREFIX || '';
+    if (toolPrefix) {
+      configDir = `./.setting.${toolPrefix}`;
+    } else {
+      configDir = './.setting';
+    }
+  }
+  return configDir;
+};
+
 // Get API debug config file path
 const getApiConfigPath = () => {
-  const configDir = process.env.CONFIG_DIR || './.setting';
+  const configDir = getConfigDir();
   return path.join(configDir, 'api.json');
 };
 
@@ -30,7 +44,7 @@ const loadApiConfig = () => {
 
 // Save API debug config
 const saveApiConfig = (apiConfig) => {
-  const configDir = process.env.CONFIG_DIR || './.setting';
+  const configDir = getConfigDir();
   const apiConfigPath = path.join(configDir, 'api.json');
   
   try {
@@ -125,6 +139,7 @@ const detectContentType = (body) => {
 };
 
 module.exports = {
+  getConfigDir,
   getApiConfigPath,
   loadApiConfig,
   saveApiConfig,
