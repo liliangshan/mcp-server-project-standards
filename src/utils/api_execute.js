@@ -1,9 +1,10 @@
 const { loadApiConfig, getAllowedMethods } = require('./api_common');
+const https = require('https');
 
-// 设置全局环境变量以跳过证书验证
-if (!process.env.NODE_TLS_REJECT_UNAUTHORIZED) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+// 为 HTTPS 请求创建跳过证书验证的 agent
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 /**
  * API 执行工具 - 通过索引执行已配置的API
@@ -95,21 +96,39 @@ async function api_execute(params, config, saveConfig) {
     
     // 执行请求
     const startTime = Date.now();
-    const response = await fetch(fullUrl, requestOptions);
-    const endTime = Date.now();
-    
-    // 处理响应
+    let response;
     let responseData;
-    const contentType = response.headers.get('content-type') || '';
+    let error = null;
     
-    if (contentType.includes('application/json')) {
-      responseData = await response.json();
-    } else {
-      responseData = await response.text();
+    try {
+      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      if (fullUrl.startsWith('https')) {
+        requestOptions.agent = httpsAgent;
+      }
+      
+      response = await fetch(fullUrl, requestOptions);
+      
+      // 处理响应
+      const contentType = response.headers.get('content-type') || '';
+      
+      if (contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        responseData = await response.text();
+      }
+    } catch (fetchError) {
+      error = fetchError.message;
+      throw new Error(`Failed to execute API request: ${error}`);
     }
     
+    const endTime = Date.now();
+    
+    // 判断请求是否成功（HTTP 状态码 200-299 为成功）
+    const isHttpSuccess = response.status >= 200 && response.status < 300;
+    const success = isHttpSuccess;
+    
     return {
-      success: true,
+      success: success,
       index: index,
       api: {
         url: apiConfig.url,
@@ -129,6 +148,7 @@ async function api_execute(params, config, saveConfig) {
         headers: Object.fromEntries(response.headers.entries()),
         data: responseData
       },
+      error: success ? undefined : (error || `HTTP ${response.status}: ${response.statusText}`),
       timing: {
         duration: endTime - startTime,
         timestamp: new Date().toISOString()

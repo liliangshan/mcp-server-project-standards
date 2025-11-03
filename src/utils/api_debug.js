@@ -334,6 +334,7 @@ async function api_debug(params, config, saveConfig) {
         };
       }
     } else {
+      // 失败时也要返回响应数据
       return {
         success: false,
         message: `Failed to execute API: ${url}`,
@@ -343,6 +344,12 @@ async function api_debug(params, config, saveConfig) {
           headers: finalHeaders,
           body: requestBody
         },
+        response: response ? {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          data: responseData
+        } : undefined,
         error: error || (response ? `HTTP ${response.status}: ${response.statusText}` : 'Request failed'),
         timestamp: new Date().toISOString()
       };

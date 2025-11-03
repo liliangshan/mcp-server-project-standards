@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.0.2] - 2025-01-20
+
+### 🐛 Bug Fixes
+- **API 错误响应处理优化**：
+  - 修复 `api_execute` 工具：现在会根据 HTTP 状态码正确判断成功/失败（200-299 为成功），失败时会返回 `success: false` 和 `error` 字段
+  - 修复 `api_debug` 工具：失败时（如 500 错误）现在也会返回完整的 `response` 对象，包含响应体中的错误信息
+  - 确保所有工具（`api_execute`、`api_debug`、`api_login`）在返回错误状态码时都能完整返回服务器响应内容，便于调试
+  - 为 `api_execute` 添加 HTTPS agent 支持，与其他工具保持一致
+
+### 📝 改进说明
+- 当 API 返回 500 或其他错误状态码时，现在可以完整获取服务器返回的错误响应内容
+- 所有 API 工具的错误响应格式统一，包含：`success`、`error`、`response`（包含 status、statusText、headers、data）
+
 ## [3.0.0] - 2025-10-31
 
 ### 🚀 Breaking Changes
