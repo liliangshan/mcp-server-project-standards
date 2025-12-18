@@ -1,32 +1,32 @@
 const { getLoginUrl, getLoginMethod, getLoginBody, loadApiConfig, saveApiConfig } = require('./api_common');
 const https = require('https');
 
-// 为 HTTPS 请求创建跳过证书验证的 agent
+// Create an agent for HTTPS requests that skips certificate verification
 const httpsAgent = new https.Agent({
   rejectUnauthorized: false
 });
 
 /**
- * API 登录工具 - 直接执行登录请求（从环境变量获取登录信息）
- * @param {Object} params - 参数
- * @param {string} params.baseUrl - 基础URL（可选，会覆盖配置中的baseUrl）
- * @param {Object} config - 服务器配置
- * @param {Function} saveConfig - 保存配置函数
- * @returns {Object} 登录结果
+ * API Login Tool - Execute login request directly (Get login info from environment variables)
+ * @param {Object} params - Parameters
+ * @param {string} params.baseUrl - Base URL (optional, overrides baseUrl in configuration)
+ * @param {Object} config - Server configuration
+ * @param {Function} saveConfig - Save configuration function
+ * @returns {Object} Login result
  */
 async function api_login(params, config, saveConfig) {
   const { baseUrl } = params || {};
 
   try {
-    // 加载当前配置
+    // Load current configuration
     const apiDebugConfig = loadApiConfig();
     
-    // 使用传入的baseUrl或配置中的baseUrl
+    // Use passed baseUrl or baseUrl from configuration
     const finalBaseUrl = baseUrl || apiDebugConfig.baseUrl || '';
     const loginUrl = getLoginUrl();
     const loginMethod = getLoginMethod();
     
-    // 构建完整登录URL
+    // Build full login URL
     let fullLoginUrl;
     if (loginUrl.startsWith('http://') || loginUrl.startsWith('https://')) {
       fullLoginUrl = loginUrl;
@@ -34,29 +34,29 @@ async function api_login(params, config, saveConfig) {
       fullLoginUrl = finalBaseUrl + loginUrl;
     }
     
-    // 从环境变量获取登录请求体
+    // Get login request body from environment variables
     const loginBodyRaw = getLoginBody();
     let loginBody;
     
-    // 处理不同格式的请求体
+    // Process request body in different formats
     if (typeof loginBodyRaw === 'string') {
-      // 如果是字符串，直接使用
+      // If it's a string, use it directly
       loginBody = loginBodyRaw;
     } else if (typeof loginBodyRaw === 'object') {
-      // 如果是对象，转换为JSON字符串
+      // If it's an object, convert to JSON string
       loginBody = JSON.stringify(loginBodyRaw);
     } else {
-      // 其他情况，使用默认格式
+      // Otherwise, use default format
       loginBody = '{"username":"","password":""}';
     }
 
-    // 准备请求头
+    // Prepare request headers
     const headers = {
       ...apiDebugConfig.headers,
       'Content-Type': 'application/json'
     };
 
-    // 执行登录请求
+    // Execute login request
     let response;
     let responseData;
     let success = true;
@@ -69,14 +69,14 @@ async function api_login(params, config, saveConfig) {
         body: loginBody
       };
       
-      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      // Add agent to HTTPS requests to skip certificate verification
       if (fullLoginUrl.startsWith('https')) {
         fetchOptions.agent = httpsAgent;
       }
       
       response = await fetch(fullLoginUrl, fetchOptions);
 
-      // 获取响应数据
+      // Get response data
       const contentType = response.headers.get('content-type');
 
       if (contentType && contentType.includes('application/json')) {
@@ -85,17 +85,17 @@ async function api_login(params, config, saveConfig) {
         responseData = await response.text();
       }
 
-      // 判断登录是否成功
+      // Determine if login was successful
       const isHttpSuccess = response.status >= 200 && response.status < 300;
       success = isHttpSuccess;
 
       if (success) {
-        // 登录成功，尝试提取token并更新公共请求头
+        // Login successful, try to extract token and update common headers
         let token = null;
 
-        // 尝试从响应中提取token
+        // Try to extract token from response
         if (responseData && typeof responseData === 'object') {
-          // 常见的token字段名
+          // Common token field names
           const tokenFields = ['token', 'access_token', 'accessToken', 'authToken', 'jwt'];
           for (const field of tokenFields) {
             if (responseData[field]) {
@@ -105,7 +105,7 @@ async function api_login(params, config, saveConfig) {
           }
         }
 
-        // 如果找到token，自动更新Authorization头
+        // If token is found, automatically update Authorization header
         if (token) {
           apiDebugConfig.headers = {
             ...apiDebugConfig.headers,

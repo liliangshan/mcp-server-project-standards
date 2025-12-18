@@ -1,0 +1,6 @@
+node_modules/
+.cursor/
+.setting/
+.setting.*
+*.log
+

@@ -12,16 +12,28 @@ const api_debug = require('./utils/api_debug');
 const api_config = require('./utils/api_config');
 const api_help = require('./utils/api_help');
 const api_execute = require('./utils/api_execute');
+const list_directory = require('./utils/list_directory');
+const generate_cursorrules = require('./utils/generate_cursorrules');
 
 // Get config directory based on CONFIG_DIR and TOOL_PREFIX
 const getConfigDir = () => {
   let configDir = process.env.CONFIG_DIR;
+  // If PROJECT_PATH is null and client is Cursor, default to '.', otherwise null
+  const projectPath = process.env.PROJECT_PATH || (global.isCursor ? '.' : null);
+
   if (!configDir) {
     const toolPrefix = process.env.TOOL_PREFIX || '';
+    // Configuration location: under project path if available, otherwise current directory
+    const baseDir = projectPath || '.';
     if (toolPrefix) {
-      configDir = `./.setting.${toolPrefix}`;
+      configDir = path.resolve(baseDir, `.setting.${toolPrefix}`);
     } else {
-      configDir = './.setting';
+      configDir = path.resolve(baseDir, '.setting');
+    }
+  } else if (projectPath) {
+    // If CONFIG_DIR is set, make it absolute or relative to projectPath if not already absolute
+    if (!path.isAbsolute(configDir)) {
+      configDir = path.resolve(projectPath, configDir);
     }
   }
   return configDir;
@@ -62,11 +74,15 @@ const saveConfig = (config) => {
   }
 };
 
-// 启动日志
+// Startup logs
 console.error('=== MCP Project Standards Server Starting ===');
 console.error(`Time: ${new Date().toISOString()}`);
+console.error(`Project Path: ${process.env.PROJECT_PATH || '.'}`);
 console.error(`Config Dir: ${getConfigDir()}`);
 console.error('==============================================');
+
+// Global state
+global.isCursor = false;
 
 // Final MCP Server
 class ProjectStandardsMCPServer {
@@ -77,25 +93,25 @@ class ProjectStandardsMCPServer {
     this.config = getConfig();
     this.needsProjectFolder = this.config === null;
 
-    // 如果配置文件不存在，创建默认配置
+    // Create default config if config file doesn't exist
     if (this.needsProjectFolder) {
       this.createDefaultConfig();
     }
   }
 
-  // 创建默认配置文件
+  // Create default config file
   createDefaultConfig() {
     const configDir = getConfigDir();
     const configPath = path.join(configDir, 'config.json');
 
     try {
-      // 创建配置目录
+      // Create config directory
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
         console.error(`Created config directory: ${configDir}`);
       }
 
-      // 创建默认配置文件
+      // Create default config file
       const defaultConfig = {
         project_info: {},
         project_structure: [],
@@ -107,12 +123,12 @@ class ProjectStandardsMCPServer {
       fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
       console.error(`Created default config file: ${configPath}`);
 
-      // 更新配置和状态
+      // Update config and state
       this.config = defaultConfig;
       this.needsProjectFolder = false;
     } catch (err) {
       console.error('Failed to create default config:', err.message);
-      // 保持 needsProjectFolder = true 状态
+      // Keep needsProjectFolder = true state
     }
   }
 
@@ -197,8 +213,23 @@ class ProjectStandardsMCPServer {
     return result;
   }
 
+  // List directory tool
+  async list_directory(params) {
+    const result = await list_directory(params);
+    return result;
+  }
 
+  // Generate cursorrules tool
+  async generate_cursorrules(params) {
+    const result = await generate_cursorrules(params, this.config);
+    return result;
+  }
 
+  // Generate rules tool (for non-cursor)
+  async generate_rules(params) {
+    const result = await generate_cursorrules(params, this.config);
+    return result;
+  }
 
   // Handle JSON-RPC requests
   async handleRequest(request) {
@@ -214,6 +245,11 @@ class ProjectStandardsMCPServer {
 
       try {
         if (method === 'initialize') {
+          // Detect Cursor client
+          const clientName = params?.clientInfo?.name || '';
+          global.isCursor = clientName.toLowerCase().includes('cursor');
+          console.error(`Client identified: ${clientName} (isCursor: ${global.isCursor})`);
+
           // If already initialized, return success but don't re-initialize
           if (!this.initialized) {
             this.initialized = true;
@@ -877,6 +913,63 @@ class ProjectStandardsMCPServer {
               ]
             }
           });
+
+        // Check whether to show project structure related tools
+        const projectPath = process.env.PROJECT_PATH || (global.isCursor ? '.' : null);
+        const showStructureTools = !!projectPath;
+
+        if (showStructureTools) {
+          // List Directory Tool
+          tools.push({
+            name: 'list_directory',
+            description: 'List directory structure relative to the project path. Returns a tree of files and directories.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                path: {
+                  type: 'string',
+                  description: 'Subdirectory path to list (relative to project path, optional)'
+                },
+                depth: {
+                  type: 'number',
+                  description: 'Max depth to traverse (default: 2, optional)'
+                }
+              }
+            }
+          });
+
+          if (global.isCursor) {
+            // Generate Cursor Rules Tool
+            tools.push({
+              name: 'generate_cursorrules',
+              description: 'Generate .cursorrules content based on project standards. Returns content and save path for user confirmation.',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  save: {
+                    type: 'boolean',
+                    description: 'Whether to save to .cursorrules file (default: false)'
+                  }
+                }
+              }
+            });
+          } else {
+            // Generate General Rules Tool
+            tools.push({
+              name: 'generate_rules',
+              description: 'Generate project rules content based on standards. Returns content and suggested save path for user confirmation.',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  save: {
+                    type: 'boolean',
+                    description: 'Whether to save to rules file (default: false)'
+                  }
+                }
+              }
+            });
+          }
+        }
 
           // Apply tool prefix and project name if both provided
           const toolPrefix = process.env.TOOL_PREFIX || '';

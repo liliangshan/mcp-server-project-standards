@@ -20,20 +20,20 @@ async function project_info(params, config, saveConfig) {
   
   if (action === 'get') {
     try {
-      // 从配置文件的 project_info 字段中获取项目信息，如果没有则使用默认值
+      // Get project info from project_info field in config file, use default if not present
       const projectInfo = config?.project_info || '';
       const projectName = projectInfo.projectName || '';
       const developmentLanguage = projectInfo.developmentLanguage || '';
       const basicInfo = projectInfo.basicInfo || '';
 
       return {
-        // 项目名称
+        // Project name
         projectName: projectName,
         
-        // 开发语言
+        // Development language
         developmentLanguage: developmentLanguage,
         
-        // 基本信息
+        // Basic info
         basicInfo: basicInfo,
         
         timestamp: new Date().toISOString()
@@ -55,15 +55,15 @@ async function project_info(params, config, saveConfig) {
     }
     
     try {
-      // 确保 config.project_info 存在
+      // Ensure config.project_info exists
       if (!config.project_info) {
         config.project_info = {};
       }
       
-      // 更新指定字段
+      // Update specified field
       config.project_info[key] = value;
       
-      // 保存配置
+      // Save configuration
       const saved = saveConfig(config);
       if (!saved) {
         throw new Error('Failed to save configuration');

@@ -21,7 +21,7 @@ async function database_standards(params, config, saveConfig) {
   
   if (action === 'get') {
     try {
-      // 从配置文件的 database_standards 字段中获取标准，如果没有则使用默认值
+      // Get standards from database_standards field in config file, use default if not present
       const databaseStandards = config?.database_standards || [
         'Use meaningful table names with descriptive prefixes',
         'Use snake_case for table and column names',
@@ -69,23 +69,23 @@ async function database_standards(params, config, saveConfig) {
     }
     
     try {
-      // 更新配置
+      // Update configuration
       if (!config.database_standards) {
         config.database_standards = [];
       }
       
-      // 处理数组类型的合并逻辑
+      // Handle merging logic for array types
       if (!forceOverwrite) {
-        // 如果 forceOverwrite 为 false，则合并数组而不是覆盖
+        // Merge array instead of overwrite if forceOverwrite is false
         const existingArray = config.database_standards;
         const newArray = [...new Set([...existingArray, ...standards])];
         config.database_standards = newArray;
       } else {
-        // 直接覆盖
+        // Overwrite directly
         config.database_standards = standards;
       }
       
-      // 保存配置
+      // Save configuration
       const saved = saveConfig(config);
       if (!saved) {
         throw new Error('Failed to save configuration');
@@ -111,17 +111,17 @@ async function database_standards(params, config, saveConfig) {
     }
     
     try {
-      // 确保 config.database_standards 存在
+      // Ensure config.database_standards exists
       if (!config.database_standards) {
         config.database_standards = [];
       }
       
-      // 查找并删除指定的 standard
+      // Find and delete specified standard
       const standardIndex = config.database_standards.indexOf(standard);
       if (standardIndex !== -1) {
         config.database_standards.splice(standardIndex, 1);
         
-        // 保存配置
+        // Save configuration
         const saved = saveConfig(config);
         if (!saved) {
           throw new Error('Failed to save configuration');

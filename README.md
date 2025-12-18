@@ -4,6 +4,13 @@ A MCP (Model Context Protocol) server for project standards management, designed
 
 ## 📋 Version Updates
 
+### v5.0.0 (2025-12-19) - Major Release
+- **Project Path Support**: Added `PROJECT_PATH` environment variable for resolving relative paths.
+- **Cursor Detection**: Automatic identification of Cursor IDE for enhanced features.
+- **New Tools**: Added `list_directory`, `generate_cursorrules`, and `generate_rules`.
+- **AI Guidance**: Integrated AI Enforcement Rules into rule generation templates.
+- **Security**: Added path validation for directory listing.
+
 ### v3.0.0 (2025-10-31) - Major Release
 
 #### 🚀 Breaking Changes
@@ -78,6 +85,10 @@ A MCP (Model Context Protocol) server for project standards management, designed
 
 ## 🚀 Core Advantages
 
+### 💰 Token Cost Optimization
+- **Efficient Context Caching**: By using MCP tools to retrieve short, structured standard data instead of reading long documents, it triggers model Context Caching more effectively (e.g., Gemini 3 Flash), significantly reducing input costs (down to $0.05/1M).
+- **Incremental Output**: Enforces minimal code diffs and precise tool responses, minimizing high-cost output token consumption.
+
 ### 🎯 Solving Multi-Machine Development Chaos
 - **Unified Standards**: AI assistants on multiple machines use the same project standards, avoiding inconsistent development styles
 - **Team Collaboration**: Eliminates code style differences caused by different developers using different AI configurations
@@ -149,7 +160,8 @@ The server uses the `./.setting/` directory to store configuration files by defa
 
 | Variable | Default | Description | Example |
 |----------|---------|-------------|---------|
-| CONFIG_DIR | ./.setting or ./.setting.<TOOL_PREFIX> | Configuration directory. If set, used as-is; else if TOOL_PREFIX set, uses ./.setting.<TOOL_PREFIX>; else ./.setting | `export CONFIG_DIR="./config"` |
+| PROJECT_PATH | . | Root path of the project. Supports both absolute (e.g., `/` or `C:\`) and relative paths. Used to resolve all relative paths. | `export PROJECT_PATH="/path/to/project"` |
+| CONFIG_DIR | ./.setting or ./.setting.<TOOL_PREFIX> | Configuration directory. Resolved relative to PROJECT_PATH. | `export CONFIG_DIR="./config"` |
 | TOOL_PREFIX |  | Optional tool prefix for tool names and config isolation | `export TOOL_PREFIX="projA"` |
 | PROJECT_NAME |  | Optional project branding for tool descriptions | `export PROJECT_NAME="MyProject"` |
 | API_DEBUG_ALLOWED_METHODS | GET | Control allowed request methods (supports: GET,POST,PUT,DELETE,PATCH, etc.) | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
@@ -247,6 +259,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "CONFIG_DIR": "./.setting",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
@@ -268,6 +281,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projA",
         "PROJECT_NAME": "Project A",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -280,6 +294,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projB",
         "PROJECT_NAME": "Project B",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -303,6 +318,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "CONFIG_DIR": "./.setting",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
@@ -323,6 +339,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projA",
         "PROJECT_NAME": "Project A",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -335,6 +352,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projB",
         "PROJECT_NAME": "Project B",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -543,6 +561,49 @@ The API debugging tool supports a complete login authentication flow, making it 
    ```
 
 This design eliminates the need for manual authentication state management, as the tool automatically handles login and token updates, greatly simplifying the API debugging process!
+
+### 7. Directory Listing (list_directory)
+Recursively explores the directory structure relative to the project root.
+
+**Parameters:**
+- `path` (optional): Subdirectory path to list.
+- `depth` (optional): Max recursion depth (default: 2).
+
+**Example:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "list_directory",
+    "arguments": {
+      "depth": 3
+    }
+  }
+}
+```
+
+### 8. Rule Generation (generate_cursorrules / generate_rules)
+Generates AI project guidance files (`.cursorrules` for Cursor, `PROJECT_RULES.md` for others) based on your standards.
+
+**Parameters:**
+- `save` (optional): Whether to save content to disk (default: false).
+
+**Example:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "generate_cursorrules",
+    "arguments": {
+      "save": true
+    }
+  }
+}
+```
 
 ## 🔗 Related Tools for Collaborative Use
 

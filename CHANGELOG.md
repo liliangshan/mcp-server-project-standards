@@ -1,5 +1,30 @@
 # Changelog
 
+## [5.0.0] - 2025-12-19
+
+### 🚀 Major Release - Project Path & AI Guidance
+
+#### ✨ New Features
+- **Project Path Support**: Introduced `PROJECT_PATH` environment variable. All configurations and tools now resolve paths relative to the specified project root.
+- **Cursor Client Detection**: Added automatic identification of Cursor IDE during initialization, enabling `global.isCursor` for environment-specific tool behavior.
+- **Directory Structure Tool**: Added `list_directory` for recursive file system exploration with depth control.
+- **Automated Rules Generation**: Added `generate_cursorrules` (for Cursor) and `generate_rules` (for other clients) to create standardized project guidance files (`.cursorrules` or `PROJECT_RULES.md`).
+- **Dynamic Tool Discovery**: Tools related to project structure are now hidden if `PROJECT_PATH` is not set in non-Cursor environments.
+
+#### 🛡️ AI Behavior & Enforcement
+- **Standardized Enforcement Rules**: Integrated comprehensive AI guidelines into rule generation, including Tool-First policy, context maintenance triggers, and cost optimization strategies.
+- **Two-Step Workflow**: Rule generation tools now return content and save paths for user review before writing to disk (via `save: true`).
+- **Auto-Alignment Logic**: Explicit instructions for AI to bind project paths automatically and re-align standards when context is compressed.
+
+#### 💰 Cost Optimization
+- **Token Usage Reduction**: Optimized AI interaction patterns to maximize Context Caching, reducing input token costs by up to 90% (e.g., ~$0.05/1M tokens).
+- **Incremental Diff Enforcement**: Explicit rules for AI to generate minimal code changes, significantly reducing expensive output token consumption.
+
+#### 🌐 Improvements
+- **Language Unification**: Converted all source code comments and rule templates to English.
+- **Enhanced Logging**: Server startup logs now display the resolved Project Path and Client type.
+- **Path Security**: Added validation to ensure directory listing remains within the project boundaries.
+
 ## [3.0.2] - 2025-01-20
 
 ### 🐛 Bug Fixes

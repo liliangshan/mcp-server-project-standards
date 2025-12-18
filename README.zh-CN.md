@@ -4,6 +4,13 @@
 
 ## 📋 版本更新说明
 
+### v5.0.0 (2025-12-19) - 重大更新
+- **项目路径支持**：新增 `PROJECT_PATH` 环境变量，支持相对于项目根目录解析路径。
+- **Cursor 自动识别**：初始化时自动识别 Cursor 编辑器，开启环境特有的增强模式。
+- **新增工具**：新增 `list_directory`、`generate_cursorrules` 及 `generate_rules` 工具。
+- **AI 行为准则**：在规则生成模板中集成了完善的 AI 行为准则与强制执行逻辑。
+- **安全性增强**：为目录扫描工具增加了路径越界校验。
+
 ### v3.0.0 (2025-10-31) - 重大更新
 
 #### 🚀 破坏性变更
@@ -61,6 +68,10 @@
 - 完善了登录认证流程文档
 
 ## 🚀 核心优势
+
+### 💰 Token 成本优化
+- **高效 Context Caching**：通过 MCP 工具获取短小、结构化的标准数据而非读取冗长文档，能更有效地触发模型的 Context Caching（上下文缓存，如 Gemini 3 Flash），将输入成本降低至极低水平（约 $0.05/1M）。
+- **增量式输出**：强制执行最小化代码 Diff 和精简的工具响应，最大限度减少高昂的输出 Token 消耗。
 
 ### 🎯 解决多机器开发混乱问题
 - **统一标准**：多台机器上的 AI 助手使用相同的项目标准，避免开发风格不一致
@@ -133,7 +144,8 @@ npm install
 
 | 变量名 | 默认值 | 描述 | 示例 |
 |--------|--------|------|------|
-| CONFIG_DIR | ./.setting 或 ./.setting.<TOOL_PREFIX> | 配置目录。若设置则直接使用；否则若设置了 TOOL_PREFIX 则使用 ./.setting.<TOOL_PREFIX>；否则 ./.setting | `export CONFIG_DIR="./config"` |
+| PROJECT_PATH | . | 项目根路径。支持绝对路径（如 `/` 或 `C:\`）和相对路径。用于解析所有相对路径。 | `export PROJECT_PATH="/path/to/project"` |
+| CONFIG_DIR | ./.setting 或 ./.setting.<TOOL_PREFIX> | 配置目录。相对于 PROJECT_PATH 解析。 | `export CONFIG_DIR="./config"` |
 | TOOL_PREFIX |  | 工具名前缀，同时用于多项目配置隔离 | `export TOOL_PREFIX="projA"` |
 | PROJECT_NAME |  | 工具描述前添加项目名称用于标识 | `export PROJECT_NAME="MyProject"` |
 | API_DEBUG_ALLOWED_METHODS | GET | 控制允许的请求方法（支持：GET,POST,PUT,DELETE,PATCH等） | `export API_DEBUG_ALLOWED_METHODS="GET,POST"` |
@@ -231,6 +243,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "CONFIG_DIR": "./.setting",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
@@ -252,6 +265,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projA",
         "PROJECT_NAME": "项目A",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -264,6 +278,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projB",
         "PROJECT_NAME": "项目B",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -287,6 +302,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "CONFIG_DIR": "./.setting",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
         "API_DEBUG_LOGIN_URL": "/api/login",
@@ -307,6 +323,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projA",
         "PROJECT_NAME": "项目A",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -319,6 +336,7 @@ npm run dev
       "command": "npx",
       "args": ["@liangshanli/mcp-server-project-standards"],
       "env": {
+        "PROJECT_PATH": ".",
         "TOOL_PREFIX": "projB",
         "PROJECT_NAME": "项目B",
         "API_DEBUG_ALLOWED_METHODS": "GET,POST,PUT,DELETE",
@@ -531,6 +549,49 @@ API 调试工具支持完整的登录认证流程，让您轻松管理 API 访�
    ```
 
 这样设计让您无需手动管理认证状态，工具会自动处理登录和 token 更新，大大简化了 API 调试流程！
+
+### 7. 目录列表工具 (list_directory)
+递归地探索相对于项目根目录的目录结构。
+
+**参数：**
+- `path` (可选): 要列出的子目录路径。
+- `depth` (可选): 最大递归深度（默认：2）。
+
+**使用示例：**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "list_directory",
+    "arguments": {
+      "depth": 3
+    }
+  }
+}
+```
+
+### 8. 规则生成工具 (generate_cursorrules / generate_rules)
+根据您的标准生成 AI 项目指导文件（Cursor 使用 `.cursorrules`，其他客户端使用 `PROJECT_RULES.md`）。
+
+**参数：**
+- `save` (可选): 是否将内容保存到磁盘（默认：false）。
+
+**使用示例：**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "generate_cursorrules",
+    "arguments": {
+      "save": true
+    }
+  }
+}
+```
 
 ## 🔗 相关工具协同使用
 

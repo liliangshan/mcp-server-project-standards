@@ -79,16 +79,16 @@ const getLoginMethod = () => {
 const getLoginBody = () => {
   const envBody = process.env.API_DEBUG_LOGIN_BODY || '{"username":"","password":""}';
   
-  // 如果是字符串格式，直接返回
+  // If it is a string format, return it directly
   if (typeof envBody === 'string' && !envBody.startsWith('{')) {
     return envBody;
   }
   
-  // 如果是JSON格式，解析后返回
+  // If it is JSON format, parse and return it
   try {
     return JSON.parse(envBody);
   } catch {
-    // 如果解析失败，返回原始字符串
+    // If parsing fails, return the original string
     return envBody;
   }
 };

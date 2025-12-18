@@ -3,7 +3,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// 简单日志输出
+// Simple log output
 const writeLog = (level, message, data = null) => {
   console.error(`[${level}] ${message}`);
 };

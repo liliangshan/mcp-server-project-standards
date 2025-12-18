@@ -1,38 +1,38 @@
 const { getAllowedMethods, loadApiConfig, saveApiConfig, detectContentType } = require('./api_common');
 const https = require('https');
 
-// 为 HTTPS 请求创建跳过证书验证的 agent
+// Create an agent for HTTPS requests that skips certificate verification
 const httpsAgent = new https.Agent({
   rejectUnauthorized: false
 });
 
 /**
- * API 调试工具 - 直接执行API请求
+ * API Debug Tool - Direct API request execution
  * 
- * 支持的请求体格式：
- * 1. JSON对象: {"username": "admin", "password": "123456"}
- * 2. 表单数据: "username=admin&password=123456"
- * 3. 纯文本: "Hello World"
+ * Supported body formats:
+ * 1. JSON object: {"username": "admin", "password": "123456"}
+ * 2. Form data: "username=admin&password=123456"
+ * 3. Plain text: "Hello World"
  * 4. XML: "<user><name>John</name><email>john@example.com</email></user>"
  * 5. HTML: "<html><body>Content</body></html>"
  * 
- * 自动内容类型检测：
- * - JSON对象 → application/json
- * - 表单数据 → application/x-www-form-urlencoded
+ * Auto content-type detection:
+ * - JSON object → application/json
+ * - Form data → application/x-www-form-urlencoded
  * - XML → application/xml
  * - HTML → text/html
- * - 纯文本 → text/plain
+ * - Plain text → text/plain
  * 
- * @param {Object} params - 参数
- * @param {string} params.url - 要执行的接口URL（必需）
- * @param {string} params.method - HTTP方法（可选，默认GET）
- * @param {Object} params.headers - 额外请求头（可选）
- * @param {Object} params.query - 查询参数（可选）
- * @param {*} params.body - 请求体（可选，支持多种格式）
- * @param {string} params.contentType - 内容类型（可选，会自动检测）
- * @param {Object} config - 服务器配置
- * @param {Function} saveConfig - 保存配置函数
- * @returns {Object} API调试结果
+ * @param {Object} params - Parameters
+ * @param {string} params.url - API URL to execute (required)
+ * @param {string} params.method - HTTP method (optional, default GET)
+ * @param {Object} params.headers - Additional request headers (optional)
+ * @param {Object} params.query - Query parameters (optional)
+ * @param {*} params.body - Request body (optional, supports multiple formats)
+ * @param {string} params.contentType - Content-Type (optional, will be auto-detected)
+ * @param {Object} config - Server configuration
+ * @param {Function} saveConfig - Save configuration function
+ * @returns {Object} API debug result
  */
 async function api_debug(params, config, saveConfig) {
   const { url, method = 'GET', headers = {}, query, body, contentType } = params || {};
@@ -77,10 +77,10 @@ async function api_debug(params, config, saveConfig) {
   }
   
   try {
-    // 加载当前配置
+    // Load current configuration
     const apiDebugConfig = loadApiConfig();
     
-    // 验证请求方法是否被允许
+    // Verify if the request method is allowed
     const allowedMethods = getAllowedMethods();
     const requestMethod = method.toUpperCase();
     
@@ -88,7 +88,7 @@ async function api_debug(params, config, saveConfig) {
       throw new Error(`Method ${requestMethod} is not allowed. Allowed methods: ${allowedMethods.join(', ')}`);
     }
     
-    // 构建完整 URL
+    // Build full URL
     let fullUrl;
     if (url.startsWith('http://') || url.startsWith('https://')) {
       fullUrl = url;
@@ -97,23 +97,23 @@ async function api_debug(params, config, saveConfig) {
       fullUrl = baseUrl + url;
     }
     
-    // 合并请求头
+    // Merge request headers
     const finalHeaders = {
       ...apiDebugConfig.headers,
       ...headers
     };
     
-    // 处理请求体
+    // Process request body
     let requestBody = null;
     if (body && (requestMethod === 'POST' || requestMethod === 'PUT' || requestMethod === 'PATCH')) {
       if (typeof body === 'string') {
-        // 检查是否以 { 开头但无法解析为JSON对象
+        // Check if it starts with { but cannot be parsed as a JSON object
         if (body.trim().startsWith('{')) {
           try {
             JSON.parse(body);
-            // 如果能解析成功，继续正常处理
+            // If can parse successfully, continue normal processing
           } catch (parseError) {
-            // 无法解析为JSON，给出建议
+            // Cannot parse as JSON, give suggestions
             return {
               contentType: "text",
               content: [
@@ -146,21 +146,21 @@ async function api_debug(params, config, saveConfig) {
           }
         }
         
-        // 检查是否指定了 Content-Type
+        // Check if Content-Type is specified
         if (contentType) {
           finalHeaders['Content-Type'] = contentType;
           requestBody = body;
         } else {
-          // 自动判断 Content-Type
+          // Auto-detect Content-Type
           const detectedType = detectContentType(body);
           finalHeaders['Content-Type'] = detectedType;
           requestBody = body;
         }
       } else if (typeof body === 'object') {
-        // 检查是否指定了 Content-Type
+        // Check if Content-Type is specified
         if (contentType) {
           if (contentType === 'application/x-www-form-urlencoded') {
-            // 转换为 URL 编码格式
+            // Convert to URL encoded format
             const formData = new URLSearchParams();
             Object.entries(body).forEach(([key, value]) => {
               if (value !== null && value !== undefined) {
@@ -170,19 +170,19 @@ async function api_debug(params, config, saveConfig) {
             finalHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
             requestBody = formData.toString();
           } else {
-            // 其他指定类型，直接序列化
+            // Other specified types, serialize directly
             finalHeaders['Content-Type'] = contentType;
             requestBody = JSON.stringify(body);
           }
         } else {
-          // 自动判断：对象默认使用 JSON 格式
+          // Auto-detect: objects default to JSON format
           finalHeaders['Content-Type'] = 'application/json';
           requestBody = JSON.stringify(body);
         }
       }
     }
     
-    // 处理查询参数
+    // Process query parameters
     let queryString = '';
     if (query && Object.keys(query).length > 0) {
       const queryParams = new URLSearchParams();
@@ -202,21 +202,21 @@ async function api_debug(params, config, saveConfig) {
     let error = null;
     
     try {
-      // 执行请求
+      // Execute request
       const fetchOptions = {
         method: requestMethod,
         headers: finalHeaders,
         body: requestBody
       };
       
-      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      // Add agent to HTTPS requests to skip certificate verification
       if (finalRequestUrl.startsWith('https')) {
         fetchOptions.agent = httpsAgent;
       }
       
       response = await fetch(finalRequestUrl, fetchOptions);
       
-      // 获取响应数据
+      // Get response data
       const responseContentType = response.headers.get('content-type');
       
       if (responseContentType && responseContentType.includes('application/json')) {
@@ -225,7 +225,7 @@ async function api_debug(params, config, saveConfig) {
         responseData = await response.text();
       }
       
-      // 判断请求是否成功（HTTP 状态码 200-299 为成功）
+      // Determine if the request was successful (HTTP status code 200-299)
       const isHttpSuccess = response.status >= 200 && response.status < 300;
       success = isHttpSuccess;
       
@@ -235,20 +235,20 @@ async function api_debug(params, config, saveConfig) {
     }
     
     if (success && response) {
-      // 自动将接口添加到配置列表中
+      // Automatically add interface to the configuration list
       try {
         const apiConfig = loadApiConfig();
         if (!apiConfig.list) {
           apiConfig.list = [];
         }
         
-        // 检查是否已存在相同的接口
+        // Check if the same interface already exists
         const existingApiIndex = apiConfig.list.findIndex(api => 
           api.url === url && api.method === requestMethod
         );
         
         if (existingApiIndex === -1) {
-          // 如果不存在，添加到列表
+          // If it doesn't exist, add to the list
           const newApi = {
             url: url,
             method: requestMethod,
@@ -281,7 +281,7 @@ async function api_debug(params, config, saveConfig) {
             timestamp: new Date().toISOString()
           };
         } else {
-          // 如果已存在，更新接口信息
+          // If it already exists, update the interface information
           apiConfig.list[existingApiIndex] = {
             ...apiConfig.list[existingApiIndex],
             url: url,
@@ -313,7 +313,7 @@ async function api_debug(params, config, saveConfig) {
           };
         }
       } catch (saveError) {
-        // 如果保存失败，仍然返回成功响应
+        // If saving fails, still return a success response
         console.error('Failed to save API to list:', saveError.message);
         return {
           success: true,
@@ -334,7 +334,7 @@ async function api_debug(params, config, saveConfig) {
         };
       }
     } else {
-      // 失败时也要返回响应数据
+      // Return response data even on failure
       return {
         success: false,
         message: `Failed to execute API: ${url}`,

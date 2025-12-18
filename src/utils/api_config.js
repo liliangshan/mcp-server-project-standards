@@ -1,18 +1,18 @@
 const { loadApiConfig, saveApiConfig } = require('./api_common');
 
 /**
- * API 配置工具 - 专门处理API配置管理
- * @param {Object} params - 参数
- * @param {string} params.action - 操作类型 ('get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'addApi', 'search', 'list')
- * @param {Object} params.config - API配置（set 时必需）
- * @param {string} params.baseUrl - 基础URL（updateBaseUrl 时必需）
- * @param {Object} params.headers - 请求头（updateHeaders 时必需）
- * @param {string} params.headerName - 要删除的请求头名称（deleteHeader 时必需）
- * @param {Object} params.api - API配置（addApi 时必需）
- * @param {string} params.keyword - 搜索关键词（search 时必需）
- * @param {Object} config - 服务器配置
- * @param {Function} saveConfig - 保存配置函数
- * @returns {Object} API配置结果
+ * API Configuration Tool - Handles API configuration management
+ * @param {Object} params - Parameters
+ * @param {string} params.action - Action type ('get', 'set', 'updateBaseUrl', 'updateHeaders', 'deleteHeader', 'addApi', 'search', 'list')
+ * @param {Object} params.config - API configuration (required for 'set')
+ * @param {string} params.baseUrl - Base URL (required for 'updateBaseUrl')
+ * @param {Object} params.headers - Request headers (required for 'updateHeaders')
+ * @param {string} params.headerName - Header name to delete (required for 'deleteHeader')
+ * @param {Object} params.api - API configuration (required for 'addApi')
+ * @param {string} params.keyword - Search keyword (required for 'search')
+ * @param {Object} config - Server configuration
+ * @param {Function} saveConfig - Save configuration function
+ * @returns {Object} API configuration result
  */
 async function api_config(params, config, saveConfig) {
   const { action, config: apiConfig, baseUrl, headers, headerName, api, keyword } = params || {};
@@ -38,20 +38,20 @@ async function api_config(params, config, saveConfig) {
     }
     
     try {
-      // 加载现有配置
+      // Load existing configuration
       const existingConfig = loadApiConfig();
       
-      // 合并配置
+      // Merge configuration
       const mergedConfig = {
         baseUrl: apiConfig.baseUrl !== undefined ? apiConfig.baseUrl : existingConfig.baseUrl || '',
         headers: { ...existingConfig.headers, ...apiConfig.headers },
         list: []
       };
       
-      // 去重处理：相同的 URL 只保留一份
+      // De-duplication: Keep only one entry for the same URL
       const urlMap = new Map();
       
-      // 先添加现有列表中的项目
+      // Add items from the existing list first
       if (existingConfig.list && Array.isArray(existingConfig.list)) {
         existingConfig.list.forEach(item => {
           if (item.url) {
@@ -60,7 +60,7 @@ async function api_config(params, config, saveConfig) {
         });
       }
       
-      // 再添加新配置中的项目（会覆盖相同 URL 的项目）
+      // Then add items from the new configuration (overwriting items with the same URL)
       if (apiConfig.list && Array.isArray(apiConfig.list)) {
         apiConfig.list.forEach(item => {
           if (item.url) {
@@ -69,10 +69,10 @@ async function api_config(params, config, saveConfig) {
         });
       }
       
-      // 转换为数组
+      // Convert to array
       mergedConfig.list = Array.from(urlMap.values());
       
-      // 保存配置
+      // Save configuration
       const saved = saveApiConfig(mergedConfig);
       if (!saved) {
         throw new Error('Failed to save API configuration');
@@ -175,11 +175,11 @@ async function api_config(params, config, saveConfig) {
         apiDebugConfig.list = [];
       }
       
-      // 检查是否已存在相同URL的API
+      // Check if an API with the same URL already exists
       const existingIndex = apiDebugConfig.list.findIndex(item => item.url === api.url);
       
       if (existingIndex >= 0) {
-        // 更新现有API
+        // Update existing API
         apiDebugConfig.list[existingIndex] = { ...apiDebugConfig.list[existingIndex], ...api };
         const saved = saveApiConfig(apiDebugConfig);
         if (!saved) {
@@ -194,7 +194,7 @@ async function api_config(params, config, saveConfig) {
           timestamp: new Date().toISOString()
         };
       } else {
-        // 添加新API
+        // Add new API
         apiDebugConfig.list.push(api);
         const saved = saveApiConfig(apiDebugConfig);
         if (!saved) {

@@ -1,25 +1,25 @@
 const { loadApiConfig, getAllowedMethods } = require('./api_common');
 const https = require('https');
 
-// 为 HTTPS 请求创建跳过证书验证的 agent
+// Create an agent for HTTPS requests that skips certificate verification
 const httpsAgent = new https.Agent({
   rejectUnauthorized: false
 });
 
 /**
- * API 执行工具 - 通过索引执行已配置的API
- * @param {Object} params - 参数
- * @param {number} params.index - API索引（必需）
- * @param {Object} params.overrides - 覆盖参数（可选）
- * @param {string} params.overrides.url - 覆盖URL
- * @param {string} params.overrides.method - 覆盖HTTP方法
- * @param {Object} params.overrides.headers - 覆盖请求头
- * @param {Object} params.overrides.query - 覆盖查询参数
- * @param {*} params.overrides.body - 覆盖请求体
- * @param {string} params.overrides.contentType - 覆盖内容类型
- * @param {Object} config - 服务器配置
- * @param {Function} saveConfig - 保存配置函数
- * @returns {Object} API执行结果
+ * API Execute Tool - Execute configured APIs by index
+ * @param {Object} params - Parameters
+ * @param {number} params.index - API index (required)
+ * @param {Object} params.overrides - Override parameters (optional)
+ * @param {string} params.overrides.url - Override URL
+ * @param {string} params.overrides.method - Override HTTP method
+ * @param {Object} params.overrides.headers - Override request headers
+ * @param {Object} params.overrides.query - Override query parameters
+ * @param {*} params.overrides.body - Override request body
+ * @param {string} params.overrides.contentType - Override content type
+ * @param {Object} config - Server configuration
+ * @param {Function} saveConfig - Save configuration function
+ * @returns {Object} API execution result
  */
 async function api_execute(params, config, saveConfig) {
   const { index, overrides = {} } = params || {};
@@ -29,7 +29,7 @@ async function api_execute(params, config, saveConfig) {
   }
   
   try {
-    // 加载API配置
+    // Load API configuration
     const apiDebugConfig = loadApiConfig();
     
     if (!apiDebugConfig.list || !Array.isArray(apiDebugConfig.list)) {
@@ -40,10 +40,10 @@ async function api_execute(params, config, saveConfig) {
       throw new Error(`API index ${index} is out of range. Available APIs: 0-${apiDebugConfig.list.length - 1}`);
     }
     
-    // 获取API配置
+    // Get API configuration
     const apiConfig = apiDebugConfig.list[index];
     
-    // 合并配置和覆盖参数
+    // Merge configuration and override parameters
     const finalConfig = {
       url: overrides.url || apiConfig.url,
       method: overrides.method || apiConfig.method || 'GET',
@@ -53,13 +53,13 @@ async function api_execute(params, config, saveConfig) {
       contentType: overrides.contentType || apiConfig.contentType
     };
     
-    // 验证HTTP方法
+    // Verify HTTP method
     const allowedMethods = getAllowedMethods();
     if (!allowedMethods.includes(finalConfig.method.toUpperCase())) {
       throw new Error(`HTTP method '${finalConfig.method}' is not allowed. Allowed methods: ${allowedMethods.join(', ')}`);
     }
     
-    // 构建完整URL
+    // Build full URL
     let fullUrl;
     if (finalConfig.url.startsWith('http://') || finalConfig.url.startsWith('https://')) {
       fullUrl = finalConfig.url;
@@ -67,19 +67,19 @@ async function api_execute(params, config, saveConfig) {
       fullUrl = apiDebugConfig.baseUrl + finalConfig.url;
     }
     
-    // 添加查询参数
+    // Add query parameters
     if (finalConfig.query && Object.keys(finalConfig.query).length > 0) {
       const queryString = new URLSearchParams(finalConfig.query).toString();
       fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString;
     }
     
-    // 准备请求选项
+    // Prepare request options
     const requestOptions = {
       method: finalConfig.method.toUpperCase(),
       headers: finalConfig.headers
     };
     
-    // 处理请求体
+    // Process request body
     if (finalConfig.body && ['POST', 'PUT', 'PATCH'].includes(finalConfig.method.toUpperCase())) {
       if (typeof finalConfig.body === 'object') {
         requestOptions.body = JSON.stringify(finalConfig.body);
@@ -94,21 +94,21 @@ async function api_execute(params, config, saveConfig) {
       }
     }
     
-    // 执行请求
+    // Execute request
     const startTime = Date.now();
     let response;
     let responseData;
     let error = null;
     
     try {
-      // 为 HTTPS 请求添加 agent 以跳过证书验证
+      // Add agent to HTTPS requests to skip certificate verification
       if (fullUrl.startsWith('https')) {
         requestOptions.agent = httpsAgent;
       }
       
       response = await fetch(fullUrl, requestOptions);
       
-      // 处理响应
+      // Process response
       const contentType = response.headers.get('content-type') || '';
       
       if (contentType.includes('application/json')) {
@@ -123,7 +123,7 @@ async function api_execute(params, config, saveConfig) {
     
     const endTime = Date.now();
     
-    // 判断请求是否成功（HTTP 状态码 200-299 为成功）
+    // Determine if the request was successful (HTTP status code 200-299)
     const isHttpSuccess = response.status >= 200 && response.status < 300;
     const success = isHttpSuccess;
     

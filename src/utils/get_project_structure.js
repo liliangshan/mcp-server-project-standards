@@ -20,7 +20,7 @@ async function project_structure(params, config, saveConfig) {
   
   if (action === 'get') {
     try {
-      // 从配置文件的 project_structure 字段中获取结构，如果没有则使用默认值
+      // Get structure from project_structure field in config file, use default if not present
       const projectStructure = config?.project_structure || [];
 
       return projectStructure;
@@ -37,29 +37,29 @@ async function project_structure(params, config, saveConfig) {
     }
     
     try {
-      // 获取当前结构
+      // Get current structure
       let currentStructure = config?.project_structure || [];
       
-      // 创建新结构数组
+      // Create new structure array
       const newStructure = [];
       
-      // 循环处理每个新结构项
+      // Loop through each new structure item
       for (const item of structure) {
         if (!item.path || !item.description) {
           throw new Error('Each structure item must have "path" and "description" properties');
         }
         
-        // 检查路径是否已存在
+        // Check if path already exists
         const existingIndex = currentStructure.findIndex(existing => existing.path === item.path);
         
         if (existingIndex !== -1) {
-          // 路径存在，替换
+          // Path exists, replace
           currentStructure[existingIndex] = {
             path: item.path,
             description: item.description
           };
         } else {
-          // 路径不存在，添加到新结构
+          // Path doesn't exist, add to new structure
           newStructure.push({
             path: item.path,
             description: item.description
@@ -67,16 +67,16 @@ async function project_structure(params, config, saveConfig) {
         }
       }
       
-      // 将新结构附加到现有结构
+      // Append new structure to existing structure
       const updatedStructure = [...currentStructure, ...newStructure];
       
-      // 更新配置
+      // Update configuration
       if (!config.project_structure) {
         config.project_structure = [];
       }
       config.project_structure = updatedStructure;
       
-      // 保存配置
+      // Save configuration
       const saved = saveConfig(config);
       if (!saved) {
         throw new Error('Failed to save configuration');
@@ -103,17 +103,17 @@ async function project_structure(params, config, saveConfig) {
     }
     
     try {
-      // 确保 config.project_structure 存在
+      // Ensure config.project_structure exists
       if (!config.project_structure) {
         config.project_structure = [];
       }
       
-      // 查找并删除指定的路径
+      // Find and delete specified path
       const pathIndex = config.project_structure.findIndex(item => item.path === deletePath);
       if (pathIndex !== -1) {
         const deletedItem = config.project_structure.splice(pathIndex, 1)[0];
         
-        // 保存配置
+        // Save configuration
         const saved = saveConfig(config);
         if (!saved) {
           throw new Error('Failed to save configuration');

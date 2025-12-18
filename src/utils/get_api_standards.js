@@ -23,7 +23,7 @@ async function api_standards(params, config, saveConfig) {
   
   if (action === 'get') {
     try {
-      // 从配置文件的 api_standards 字段中获取标准，如果没有则使用默认值
+      // Get standards from api_standards field in config file, use default if not present
       const apiStandards = config?.api_standards || {
         interfaceType: 'restful',
         successStructure: {
@@ -74,33 +74,33 @@ async function api_standards(params, config, saveConfig) {
     }
     
     try {
-      // 确保 config.api_standards 存在
+      // Ensure config.api_standards exists
       if (!config.api_standards) {
         config.api_standards = {};
       }
       
-      // 处理数组类型的合并逻辑
+      // Handle merging logic for array types
       if (Array.isArray(value) && !forceOverwrite) {
-        // 如果 forceOverwrite 为 false，则合并数组而不是覆盖
+        // Merge array instead of overwrite if forceOverwrite is false
         if (!config.api_standards[key]) {
           config.api_standards[key] = [];
         }
         
-        // 确保现有值是数组
+        // Ensure existing value is an array
         if (!Array.isArray(config.api_standards[key])) {
           config.api_standards[key] = [];
         }
         
-        // 合并数组，去重
+        // Merge array and remove duplicates
         const existingArray = config.api_standards[key];
         const newArray = [...new Set([...existingArray, ...value])];
         config.api_standards[key] = newArray;
       } else {
-        // 直接覆盖
+        // Overwrite directly
         config.api_standards[key] = value;
       }
       
-      // 保存配置
+      // Save configuration
       const saved = saveConfig(config);
       if (!saved) {
         throw new Error('Failed to save configuration');
@@ -131,23 +131,23 @@ async function api_standards(params, config, saveConfig) {
     }
     
     try {
-      // 确保 config.api_standards 存在
+      // Ensure config.api_standards exists
       if (!config.api_standards) {
         config.api_standards = {};
       }
       
-      // 删除 header
+      // Delete header
       if (headerName) {
-        // 确保 basicHeaders 存在
+        // Ensure basicHeaders exists
         if (!config.api_standards.basicHeaders) {
           config.api_standards.basicHeaders = {};
         }
         
-        // 删除指定的 header
+        // Delete specified header
         if (config.api_standards.basicHeaders.hasOwnProperty(headerName)) {
           delete config.api_standards.basicHeaders[headerName];
           
-          // 保存配置
+          // Save configuration
           const saved = saveConfig(config);
           if (!saved) {
             throw new Error('Failed to save configuration');
@@ -164,19 +164,19 @@ async function api_standards(params, config, saveConfig) {
         }
       }
       
-      // 删除 requirement
+      // Delete requirement
       if (requirement) {
-        // 确保 requirements 存在
+        // Ensure requirements exists
         if (!config.api_standards.requirements) {
           config.api_standards.requirements = [];
         }
         
-        // 查找并删除指定的 requirement
+        // Find and delete specified requirement
         const requirementIndex = config.api_standards.requirements.indexOf(requirement);
         if (requirementIndex !== -1) {
           config.api_standards.requirements.splice(requirementIndex, 1);
           
-          // 保存配置
+          // Save configuration
           const saved = saveConfig(config);
           if (!saved) {
             throw new Error('Failed to save configuration');
