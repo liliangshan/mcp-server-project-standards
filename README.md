@@ -4,6 +4,10 @@ A MCP (Model Context Protocol) server for project standards management, designed
 
 ## 📋 Version Updates
 
+### v5.1.0 (2025-12-22)
+- **New Tool**: Added `download_file` tool to download files from URL to project path.
+- **Version Sync**: Updated server and package versions to 5.1.0.
+
 ### v5.0.0 (2025-12-19) - Major Release
 - **Project Path Support**: Added `PROJECT_PATH` environment variable for resolving relative paths.
 - **Cursor Detection**: Automatic identification of Cursor IDE for enhanced features.
@@ -115,6 +119,7 @@ A MCP (Model Context Protocol) server for project standards management, designed
 - ✅ **Configuration Management** - JSON-based configuration storage and management
 - ✅ **Auto-Restart** - Intelligent process management and fault recovery
 - ✅ **Health Checks** - Real-time service status and performance monitoring
+- ✅ **File Downloader** - Download files from URLs directly to the project directory
 
 ## 🎯 Application Scenarios
 
@@ -600,6 +605,29 @@ Generates AI project guidance files (`.cursorrules` for Cursor, `PROJECT_RULES.m
     "name": "generate_cursorrules",
     "arguments": {
       "save": true
+    }
+  }
+}
+```
+
+### 9. File Download Tool (download_file)
+Download a file from a URL and save it to a specified path within the project.
+
+**Parameters:**
+- `url` (required): The URL of the file to download.
+- `savePath` (required): The path where the file should be saved (relative to project path or absolute).
+
+**Example:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 12,
+  "method": "tools/call",
+  "params": {
+    "name": "download_file",
+    "arguments": {
+      "url": "https://example.com/logo.png",
+      "savePath": "assets/logo.png"
     }
   }
 }

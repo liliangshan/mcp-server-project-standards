@@ -14,6 +14,7 @@ const api_help = require('./utils/api_help');
 const api_execute = require('./utils/api_execute');
 const list_directory = require('./utils/list_directory');
 const generate_cursorrules = require('./utils/generate_cursorrules');
+const download_file = require('./utils/download_file');
 
 // Get config directory based on CONFIG_DIR and TOOL_PREFIX
 const getConfigDir = () => {
@@ -88,7 +89,7 @@ global.isCursor = false;
 class ProjectStandardsMCPServer {
   constructor() {
     this.name = 'project-standards-mcp-server';
-    this.version = '1.2.2';
+    this.version = '5.1.0';
     this.initialized = false;
     this.config = getConfig();
     this.needsProjectFolder = this.config === null;
@@ -228,6 +229,12 @@ class ProjectStandardsMCPServer {
   // Generate rules tool (for non-cursor)
   async generate_rules(params) {
     const result = await generate_cursorrules(params, this.config);
+    return result;
+  }
+
+  // Download file tool
+  async download_file(params) {
+    const result = await download_file(params);
     return result;
   }
 
@@ -737,6 +744,26 @@ class ProjectStandardsMCPServer {
               }
             },
             required: ['index']
+          }
+        });
+
+        // Download File Tool
+        tools.push({
+          name: 'download_file',
+          description: 'Download a file from a URL and save it to a specified path. Supported schemes: http, https.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              url: {
+                type: 'string',
+                description: 'The URL of the file to download (required)'
+              },
+              savePath: {
+                type: 'string',
+                description: 'The path where the file should be saved (relative to project path or absolute, required)'
+              }
+            },
+            required: ['url', 'savePath']
           }
         });
 

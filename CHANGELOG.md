@@ -1,5 +1,11 @@
 # Changelog
 
+## [5.1.0] - 2025-12-22
+
+### Added
+- New `download_file` tool to download files from URLs and save them to the project directory.
+- Updated server and package versions to 5.1.0.
+
 ## [5.0.0] - 2025-12-19
 
 ### 🚀 Major Release - Project Path & AI Guidance
